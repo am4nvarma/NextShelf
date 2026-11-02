@@ -2,6 +2,7 @@
 import { View, Text, FlatList, StyleSheet, TextInput } from "react-native";
 import BookCard from "../components/BookCard";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 
 const books = [
   {
@@ -35,6 +36,16 @@ const books = [
 ];
 
 export default function DiscoveryScreen () {
+  const [ searchQuery, setSearchQuery] = useState(""); 
+
+  const filteredBooks = books.filter((book) => {
+    const query = searchQuery.toLowerCase();
+
+    return (
+      book.title.toLowerCase().includes(query) ||
+      book.author.toLocaleLowerCase().includes(query)
+    )
+  })
   return (
     <View style = {styles.container}>
       <Text style = {styles.brand}>NextShelf</Text>
@@ -45,16 +56,20 @@ export default function DiscoveryScreen () {
     <Ionicons 
     name="search-outline"
     size={20}
-    color="#999999"/>
+    color="#999999"
+    />
 
     <TextInput
     style={styles.searchInput}
     placeholder="Search books, authors... "
-    placeholderTextColor="#999999"/>
+    placeholderTextColor="#999999"
+    value={searchQuery}
+    onChangeText={setSearchQuery}
+    />
     </View>
 
       <FlatList 
-      data = {books}
+      data = {filteredBooks}
       keyExtractor = {(item) => item.id }
       numColumns={2}
       columnWrapperStyle={{
@@ -71,10 +86,16 @@ export default function DiscoveryScreen () {
         rating={item.rating}
         />
       )}
+      ListEmptyComponent={
+        <Text style = {styles.emptySearch}>
+          No Books Found. Try another search
+        </Text>
+      }
       />
     </View>
   )
 }
+
 
 
 const styles = StyleSheet.create({
@@ -107,13 +128,21 @@ searchContainer: {
   height:52,
   marginBottom:15,
   borderWidth:1,
-  borderColor: "#292929"
+  borderColor: "#292929",
+  paddingHorizontal: 14
+  
 },
 searchInput: {
   flex: 1,
   color: "#FFFFFF",
   fontSize: 15,
-  marginLeft: 10,
+  marginLeft: 1 ,
+},
+emptySearch: {
+  color: "#AAAAAA",
+  textAlign: "center",
+  marginTop: 40,
+  fontSize: 15,
 }
 
 });
