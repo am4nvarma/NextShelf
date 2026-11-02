@@ -1,6 +1,7 @@
 
 import { View, Text, FlatList, StyleSheet, TextInput } from "react-native";
 import BookCard from "../components/BookCard";
+import { Ionicons } from "@expo/vector-icons";
 
 const books = [
   {
@@ -39,6 +40,18 @@ export default function DiscoveryScreen () {
       <Text style = {styles.brand}>NextShelf</Text>
 
       <Text style = {styles.heading}>Discover Books</Text>
+
+    <View style = {styles.searchContainer}>
+    <Ionicons 
+    name="search-outline"
+    size={20}
+    color="#999999"/>
+
+    <TextInput
+    style={styles.searchInput}
+    placeholder="Search books, authors... "
+    placeholderTextColor="#999999"/>
+    </View>
 
       <FlatList 
       data = {books}
@@ -86,4 +99,21 @@ const styles = StyleSheet.create({
   marginBottom: 10,
   marginLeft:5,
 },
+searchContainer: {
+  flexDirection:"row",
+  alignItems:"center",
+  backgroundColor: "#191919",
+  borderRadius:10,
+  height:52,
+  marginBottom:15,
+  borderWidth:1,
+  borderColor: "#292929"
+},
+searchInput: {
+  flex: 1,
+  color: "#FFFFFF",
+  fontSize: 15,
+  marginLeft: 10,
+}
+
 });
