@@ -5,35 +5,42 @@ type BookCardProps = {
   title: string;
   author: string;
   publishedYear?: number;
+  rating?: number
 };
 
 export default function BookCard({
   title,
   author,
   publishedYear,
+  rating,
 }: BookCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.author}>{author}</Text>
 
-      {publishedYear !== undefined && (
-        <Text style={styles.year}>{publishedYear}</Text>
+      {publishedYear && rating !== undefined && (
+        <Text style={styles.footer}>{publishedYear} | {rating} ⭐ </Text>
       )}
+
+      {/* {rating !== undefined && (
+        <Text style = {styles.rating}>{rating}</Text>
+      )} */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 280,
-    padding: 16,
-    marginVertical: 8,
-    backgroundColor: "#191919",
-    borderRadius: 12,
+  flex: 1,
+  padding: 12,
+  marginHorizontal: 6,
+  marginVertical: 8,
+  backgroundColor: "#191919",
+  borderRadius: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
   },
@@ -42,9 +49,11 @@ const styles = StyleSheet.create({
     color: "#AAAAAA",
     marginTop: 6,
   },
-  year: {
+  footer: {
     fontSize: 12,
     color: "#40C4AA",
     marginTop: 8,
+    paddingTop:2,
   },
+
 });
