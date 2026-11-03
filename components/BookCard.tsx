@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 
 type BookCardProps = {
   title: string;
   author: string;
   publishedYear?: number;
   rating?: number;
+  coverId?: number;
 };
 
 export default function BookCard({
@@ -12,20 +13,33 @@ export default function BookCard({
   author,
   publishedYear,
   rating,
+  coverId,
 }: BookCardProps) {
   return (
     <View style={styles.card}>
+      {coverId ? (
+        <Image
+          source={{
+            uri: `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`,
+          }}
+          style={styles.cover}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.coverPlaceholder}>
+          <Text style={styles.placeholderText}> No Cover </Text>
+        </View>
+      )}
+
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.author}>{author}</Text>
-      
-      <View style = {styles.footer}>
+
+      <View style={styles.footer}>
         {publishedYear !== undefined && (
-          <Text style= {styles.year}>{publishedYear}</Text>
+          <Text style={styles.year}>{publishedYear}</Text>
         )}
 
-        {rating !== undefined && (
-          <Text style = {styles.rating}> ★ {rating}</Text>
-        )}
+        {rating !== undefined && <Text style={styles.rating}> ★ {rating}</Text>}
       </View>
     </View>
   );
@@ -64,5 +78,24 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 12,
     color: "#F5C451",
+  },
+  cover: {
+    width: "100%",
+    height: 190,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  coverPlaceholder: {
+    width: "100%",
+    height: 190,
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: "#292929",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeholderText: {
+    color: "#AAAAAA",
+    fontSize: 13,
   },
 });
