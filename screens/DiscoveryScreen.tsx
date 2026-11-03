@@ -13,6 +13,7 @@ import { searchBooks } from "../services/bookApi";
 import type { OpenLibraryBook } from "../types/book";
 import { useRouter } from "expo-router";
 import { getBookDetails } from "../services/bookApi";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DiscoveryScreen() {
   const testBookDetails = async () => {
@@ -60,7 +61,7 @@ export default function DiscoveryScreen() {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.brand}>NextShelf</Text>
 
       <Text style={styles.heading}>Discover Books</Text>
@@ -124,7 +125,7 @@ export default function DiscoveryScreen() {
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -134,7 +135,6 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#0b0000",
     padding: 16,
-    paddingTop: 20,
   },
   heading: {
     fontSize: 25,
