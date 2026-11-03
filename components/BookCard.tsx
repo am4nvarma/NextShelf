@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 
 type BookCardProps = {
   title: string;
@@ -6,6 +6,7 @@ type BookCardProps = {
   publishedYear?: number;
   rating?: number;
   coverId?: number;
+  onPress: () => void;
 };
 
 export default function BookCard({
@@ -14,9 +15,10 @@ export default function BookCard({
   publishedYear,
   rating,
   coverId,
+  onPress,
 }: BookCardProps) {
   return (
-    <View style={styles.card}>
+    <Pressable style = {styles.card} onPress={onPress}>
       {coverId ? (
         <Image
           source={{
@@ -41,7 +43,7 @@ export default function BookCard({
 
         {rating !== undefined && <Text style={styles.rating}> ★ {rating}</Text>}
       </View>
-    </View>
+     </Pressable>
   );
 }
 

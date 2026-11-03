@@ -1,51 +1,61 @@
-
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import BookCard from "../components/BookCard";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import { searchBooks } from "../services/bookApi";
 import type { OpenLibraryBook } from "../types/book";
+import { useRouter } from "expo-router";
+import { getBookDetails } from "../services/bookApi";
 
 export default function DiscoveryScreen() {
+  const testBookDetails = async () => {
+    try {
+      const result = await getBookDetails("/works/OL17930368W");
+      console.log("Book details:", result);
+    } catch (error) {
+      console.log("Details API error:", error);
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [books, setBooks] = useState<OpenLibraryBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const router = useRouter();
 
   const loadBooks = async () => {
-  try {
-    setIsLoading(true);
-    setError(false);
+    try {
+      setIsLoading(true);
+      setError(false);
 
-    const result = await searchBooks("atomic habits");
-    setBooks(result.docs);
-  } catch (error) {
-    console.log("Failed to load books:", error);
-    setError(true);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      const result = await searchBooks("atomic habits");
+      setBooks(result.docs);
+    } catch (error) {
+      console.log("Failed to load books:", error);
+      setError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-useEffect(() => {
-  loadBooks();
-}, []);
+  useEffect(() => {
+    loadBooks();
+    testBookDetails();
+  }, []);
 
   const filteredBooks = books.filter((book) => {
     const query = searchQuery.toLowerCase();
 
     return (
       book.title.toLowerCase().includes(query) ||
-      book.author_name?.some((author) =>
-        author.toLowerCase().includes(query)
-      )
+      book.author_name?.some((author) => author.toLowerCase().includes(query))
     );
   });
 
@@ -67,46 +77,53 @@ useEffect(() => {
         />
       </View>
 
-{isLoading ? (
-  <ActivityIndicator size="large" color="#40C4AA" />
-) : error ? (
-  <View style={styles.errorContainer}>
-    <Text style={styles.errorText}>
-      Something went wrong. Please check your internet connection.
-    </Text>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#40C4AA" />
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Something went wrong. Please check your internet connection.
+          </Text>
 
-    <Text style={styles.retryButton} onPress={loadBooks}>
-      Try Again
-    </Text>
-  </View>
-) : (
-  <FlatList
-    data={filteredBooks}
-    keyExtractor={(item) => item.key}
-    numColumns={2}
-    columnWrapperStyle={{
-      justifyContent: "space-between",
-    }}
-    contentContainerStyle={{
-      paddingBottom: 20,
-    }}
-    renderItem={({ item }) => (
-      <BookCard
-        title={item.title}
-        author={item.author_name?.join(", ") ?? "Unknown author"}
-        publishedYear={item.first_publish_year}
-        coverId={item.cover_i}
-      />
-    )}
-    ListEmptyComponent={
-      <Text style={styles.emptySearch}>
-        No Books Found. Try another search
-      </Text>
-    }
-  />
-)}
-
-
+          <Text style={styles.retryButton} onPress={loadBooks}>
+            Try Again
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredBooks}
+          keyExtractor={(item) => item.key}
+          numColumns={2}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+          }}
+          contentContainerStyle={{
+            paddingBottom: 20,
+          }}
+          renderItem={({ item }) => (
+            <BookCard
+              title={item.title}
+              author={item.author_name?.join(", ") ?? "Unknown author"}
+              publishedYear={item.first_publish_year}
+              coverId={item.cover_i}
+              onPress={() =>
+                router.push({
+                  pathname: "/book/[id]",
+                  params: {
+                    id: item.key.replace("/works/", ""),
+                    coverId: item.cover_i?.toString() ?? "",
+                  },
+                })
+              }
+            />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptySearch}>
+              No Books Found. Try another search
+            </Text>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -157,20 +174,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   errorContainer: {
-  alignItems: "center",
-  justifyContent: "center",
-  marginTop: 40,
-  paddingHorizontal: 20,
-},
-errorText: {
-  color: "#AAAAAA",
-  textAlign: "center",
-  fontSize: 15,
-  marginBottom: 15,
-},
-retryButton: {
-  color: "#40C4AA",
-  fontSize: 16,
-  fontWeight: "bold",
-},
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    color: "#AAAAAA",
+    textAlign: "center",
+    fontSize: 15,
+    marginBottom: 15,
+  },
+  retryButton: {
+    color: "#40C4AA",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
