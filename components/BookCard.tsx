@@ -31,7 +31,7 @@ export default function BookCard({
         </View>
       )}
 
-      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title} numberOfLines = {2} >{title}</Text>
       <Text style={styles.author}>{author}</Text>
 
       <View style={styles.footer}>
@@ -53,13 +53,16 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: "#191919",
     borderRadius: 12,
+    minHeight:320,
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
+    minHeight:40
   },
   author: {
+    flex:1,
     fontSize: 14,
     color: "#AAAAAA",
     marginTop: 6,
