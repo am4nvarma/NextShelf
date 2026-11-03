@@ -95,6 +95,7 @@ useEffect(() => {
         title={item.title}
         author={item.author_name?.join(", ") ?? "Unknown author"}
         publishedYear={item.first_publish_year}
+        coverId={item.cover_i}
       />
     )}
     ListEmptyComponent={
