@@ -4,13 +4,15 @@ const BASE_URL = "https://openlibrary.org/search.json";
 
 export async function searchBooks(
   query: string,
+  signal?: AbortSignal,
+  offset: number = 0,
 ): Promise<OpenLibrarySearchResponse> {
-  const url = `${BASE_URL}?q=${encodeURIComponent(query)}&fields=key,title,author_name,first_publish_year,cover_i&limit=20`;
+  const url = `${BASE_URL}?q=${encodeURIComponent(query)}&fields=key,title,author_name,first_publish_year,cover_i&limit=20&offset=${offset}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
 
   if (!response.ok) {
-    throw new Error("failed to fetch books");
+    throw new Error("Failed to fetch books");
   }
 
   const data: OpenLibrarySearchResponse = await response.json();
@@ -34,10 +36,7 @@ export async function getBookDetails(bookKey: string) {
   return data;
 }
 
-
-export async function getAuthorDetails(
-  authorKey: string
-): Promise<BookAuthor> {
+export async function getAuthorDetails(authorKey: string): Promise<BookAuthor> {
   const url = `https://openlibrary.org${authorKey}.json`;
 
   const response = await fetch(url);
