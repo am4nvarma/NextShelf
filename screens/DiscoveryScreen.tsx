@@ -16,14 +16,7 @@ import { getBookDetails } from "../services/bookApi";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DiscoveryScreen() {
-  const testBookDetails = async () => {
-    try {
-      const result = await getBookDetails("/works/OL17930368W");
-      console.log("Book details:", result);
-    } catch (error) {
-      console.log("Details API error:", error);
-    }
-  };
+  
 
   const [searchQuery, setSearchQuery] = useState("");
   const [books, setBooks] = useState<OpenLibraryBook[]>([]);
@@ -31,34 +24,47 @@ export default function DiscoveryScreen() {
   const [error, setError] = useState(false);
   const router = useRouter();
 
-  const loadBooks = async () => {
-    try {
-      setIsLoading(true);
-      setError(false);
+  const loadBooks = async (
+    query:string,
+  signal?:AbortSignal
+) => {
+   try {
+  setIsLoading(true);
+  setError(false)
+  const result = await searchBooks(query, signal);
 
-      const result = await searchBooks("atomic habits");
-      setBooks(result.docs);
+  setBooks(result.docs);    
     } catch (error) {
-      console.log("Failed to load books:", error);
-      setError(true);
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
+      console.log("Failed to load books:", error)
+      setError(true)
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false)
+      }
     }
   };
 
+
   useEffect(() => {
-    loadBooks();
-    testBookDetails();
-  }, []);
+  const controller = new AbortController();
+  const query = searchQuery.trim();
 
-  const filteredBooks = books.filter((book) => {
-    const query = searchQuery.toLowerCase();
-
-    return (
-      book.title.toLowerCase().includes(query) ||
-      book.author_name?.some((author) => author.toLowerCase().includes(query))
+  const timer = setTimeout(() => {
+    loadBooks(
+      query || "atomic habits",
+      controller.signal
     );
-  });
+  }, 750);
+
+  return () => {
+    clearTimeout(timer);
+    controller.abort();
+  };
+}, [searchQuery]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -86,13 +92,13 @@ export default function DiscoveryScreen() {
             Something went wrong. Please check your internet connection.
           </Text>
 
-          <Text style={styles.retryButton} onPress={loadBooks}>
+          <Text style={styles.retryButton} onPress={() => loadBooks(searchQuery.trim() || "atomic habits")}>
             Try Again
           </Text>
         </View>
       ) : (
         <FlatList
-          data={filteredBooks}
+          data={books}
           keyExtractor={(item) => item.key}
           numColumns={2}
           columnWrapperStyle={{
