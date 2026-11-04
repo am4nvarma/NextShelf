@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 
 type BookCardProps = {
@@ -9,7 +10,7 @@ type BookCardProps = {
   onPress: () => void;
 };
 
-export default function BookCard({
+function BookCard({
   title,
   author,
   publishedYear,
@@ -18,7 +19,7 @@ export default function BookCard({
   onPress,
 }: BookCardProps) {
   return (
-    <Pressable style = {styles.card} onPress={onPress}>
+    <Pressable style={styles.card} onPress={onPress}>
       {coverId ? (
         <Image
           source={{
@@ -29,11 +30,14 @@ export default function BookCard({
         />
       ) : (
         <View style={styles.coverPlaceholder}>
-          <Text style={styles.placeholderText}> No Cover </Text>
+          <Text style={styles.placeholderText}>No Cover</Text>
         </View>
       )}
 
-      <Text style={styles.title} numberOfLines = {2} >{title}</Text>
+      <Text style={styles.title} numberOfLines={2}>
+        {title}
+      </Text>
+
       <Text style={styles.author}>{author}</Text>
 
       <View style={styles.footer}>
@@ -41,11 +45,13 @@ export default function BookCard({
           <Text style={styles.year}>{publishedYear}</Text>
         )}
 
-        {rating !== undefined && <Text style={styles.rating}> ★ {rating}</Text>}
+        {rating !== undefined && <Text style={styles.rating}>★ {rating}</Text>}
       </View>
-     </Pressable>
+    </Pressable>
   );
 }
+
+export default React.memo(BookCard);
 
 const styles = StyleSheet.create({
   card: {
@@ -55,16 +61,16 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: "#191919",
     borderRadius: 12,
-    minHeight:320,
+    minHeight: 320,
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
-    minHeight:40
+    minHeight: 40,
   },
   author: {
-    flex:1,
+    flex: 1,
     fontSize: 14,
     color: "#AAAAAA",
     marginTop: 6,
@@ -79,7 +85,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#40C4AA",
   },
-
   rating: {
     fontSize: 12,
     color: "#F5C451",

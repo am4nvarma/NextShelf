@@ -6,65 +6,211 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
+
 import BookCard from "../components/BookCard";
 import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { searchBooks } from "../services/bookApi";
 import type { OpenLibraryBook } from "../types/book";
 import { useRouter } from "expo-router";
-import { getBookDetails } from "../services/bookApi";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DiscoveryScreen() {
-  
-
   const [searchQuery, setSearchQuery] = useState("");
   const [books, setBooks] = useState<OpenLibraryBook[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+
+  const [offset, setOffset] = useState(0);
+  const [totalBooks, setTotalBooks] = useState(0);
+
   const router = useRouter();
 
-  const loadBooks = async (
-    query:string,
-  signal?:AbortSignal
-) => {
-   try {
-  setIsLoading(true);
-  setError(false)
-  const result = await searchBooks(query, signal);
+  // Prevent multiple pagination requests at the same time.
+  const isLoadingMoreRef = useRef(false);
 
-  setBooks(result.docs);    
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+  // Track which search request is currently active.
+  const searchVersionRef = useRef(0);
+
+  // Keep a reference to the current pagination request.
+  const paginationControllerRef = useRef<AbortController | null>(null);
+
+  const loadBooks = async (
+    query: string,
+    signal?: AbortSignal,
+    nextOffset: number = 0,
+    requestVersion: number = searchVersionRef.current,
+  ) => {
+    try {
+      if (nextOffset === 0) {
+        setIsLoading(true);
+        setError(false);
+      }
+
+      console.log("--------------------------------");
+      console.log("📚 NEXTSHELF API REQUEST");
+      console.log("Search query:", query);
+      console.log("Requested offset:", nextOffset);
+      console.log("Requested limit:", 20);
+      console.log("Expected books:", 20);
+
+      console.log("⏳ FETCH STARTED:", {
+        query,
+        offset: nextOffset,
+        version: requestVersion,
+      });
+      const result = await searchBooks(query, signal, nextOffset);
+
+      console.log("📥 API RESPONSE");
+      console.log("Books actually returned:", result.docs.length);
+      console.log("Total books reported by API:", result.numFound);
+      console.log("Next offset will be:", nextOffset + result.docs.length);
+      console.log("--------------------------------");
+
+      // Ignore outdated or cancelled requests.
+      if (signal?.aborted || requestVersion !== searchVersionRef.current) {
         return;
       }
 
-      console.log("Failed to load books:", error)
-      setError(true)
+      if (nextOffset === 0) {
+        setBooks(result.docs);
+      } else {
+        setBooks((previousBooks) => {
+          const existingKeys = new Set(previousBooks.map((book) => book.key));
+
+          const newBooks = result.docs.filter(
+            (book) => !existingKeys.has(book.key),
+          );
+
+          return [...previousBooks, ...newBooks];
+        });
+      }
+
+      setTotalBooks(result.numFound);
+
+      // Advance by the number of raw results returned by the API.
+      // If the API returns no results, stop further pagination.
+      setOffset(
+        result.docs.length === 0
+          ? result.numFound
+          : nextOffset + result.docs.length,
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+
+      if (requestVersion !== searchVersionRef.current) {
+        return;
+      }
+
+      console.log("Failed to load books:", err);
+      setError(true);
     } finally {
-      if (!signal?.aborted) {
-        setIsLoading(false)
+      if (requestVersion === searchVersionRef.current) {
+        if (nextOffset === 0) {
+          setIsLoading(false);
+        } else {
+          setIsLoadingMore(false);
+          isLoadingMoreRef.current = false;
+          paginationControllerRef.current = null;
+        }
       }
     }
   };
 
+  // Load the next page when the user scrolls.
+  const loadMoreBooks = () => {
+    if (
+      isLoading ||
+      isLoadingMoreRef.current ||
+      books.length === 0 ||
+      offset >= totalBooks
+    ) {
+      return;
+    }
 
-  useEffect(() => {
-  const controller = new AbortController();
-  const query = searchQuery.trim();
+    // Lock immediately to prevent repeated requests.
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
 
-  const timer = setTimeout(() => {
+    const controller = new AbortController();
+    paginationControllerRef.current = controller;
+
+    console.log("🚀 PAGINATION REQUEST STARTED");
+    console.log("Offset being sent:", offset);
+    console.log("Displayed books:", books.length);
+    console.log("Total available:", totalBooks);
+
     loadBooks(
-      query || "atomic habits",
-      controller.signal
+      searchQuery.trim() || "atomic habits",
+      controller.signal,
+      offset,
+      searchVersionRef.current,
     );
-  }, 750);
-
-  return () => {
-    clearTimeout(timer);
-    controller.abort();
   };
-}, [searchQuery]);
+
+  // Handle a new search.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    // Give this search a new version.
+    searchVersionRef.current += 1;
+
+    const currentVersion = searchVersionRef.current;
+    const query = searchQuery.trim();
+
+    console.log("🔎 SEARCH EFFECT STARTED:", {
+      query,
+      version: currentVersion,
+    });
+
+    // Cancel any ongoing pagination request.
+    paginationControllerRef.current?.abort();
+    paginationControllerRef.current = null;
+
+    isLoadingMoreRef.current = false;
+
+    // Reset pagination for the new search.
+    setOffset(0);
+    setTotalBooks(0);
+    setBooks([]);
+    setIsLoading(true);
+    setIsLoadingMore(false);
+    setError(false);
+
+    const timer = setTimeout(() => {
+      console.log("⏰ DEBOUNCE FINISHED:", {
+        query,
+        version: currentVersion,
+      });
+      loadBooks(query || "atomic habits", controller.signal, 0, currentVersion);
+    }, 750);
+
+    return () => {
+      console.log("🧹 SEARCH EFFECT CLEANUP:", {
+        query,
+        version: currentVersion,
+      });
+      clearTimeout(timer);
+      controller.abort();
+      paginationControllerRef.current?.abort();
+    };
+  }, [searchQuery]);
+
+  // Retry the current search if it fails.
+  const handleRetry = () => {
+    const controller = new AbortController();
+
+    loadBooks(
+      searchQuery.trim() || "atomic habits",
+      controller.signal,
+      0,
+      searchVersionRef.current,
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,7 +238,7 @@ export default function DiscoveryScreen() {
             Something went wrong. Please check your internet connection.
           </Text>
 
-          <Text style={styles.retryButton} onPress={() => loadBooks(searchQuery.trim() || "atomic habits")}>
+          <Text style={styles.retryButton} onPress={handleRetry}>
             Try Again
           </Text>
         </View>
@@ -101,12 +247,27 @@ export default function DiscoveryScreen() {
           data={books}
           keyExtractor={(item) => item.key}
           numColumns={2}
+          // Performance optimizations
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+          onEndReached={loadMoreBooks}
+          onEndReachedThreshold={0.5}
           columnWrapperStyle={{
             justifyContent: "space-between",
           }}
           contentContainerStyle={{
             paddingBottom: 20,
           }}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <ActivityIndicator
+                size="large"
+                color="#40C4AA"
+                style={{ marginVertical: 20 }}
+              />
+            ) : null
+          }
           renderItem={({ item }) => (
             <BookCard
               title={item.title}
