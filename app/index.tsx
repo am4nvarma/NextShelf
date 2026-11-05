@@ -4,9 +4,14 @@ import { Alert } from "react-native";
 
 import DiscoveryScreen from "../screens/DiscoveryScreen";
 import { testSupabaseConnection } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function HomeScreen() {
+  const { user, session, isLoading } = useAuth();
+
   useEffect(() => {
+    console.log("AUTH DIAGNOSTIC MOUNTED");
+
     let isMounted = true;
 
     async function checkConnection() {
@@ -16,7 +21,7 @@ export default function HomeScreen() {
         if (isMounted) {
           Alert.alert(
             "Supabase Connected!",
-            "Your NextShelf app can communicate with Supabase, and secure session storage is accessible."
+            "Your NextShelf app can communicate with Supabase."
           );
         }
       } catch (error) {
@@ -27,7 +32,7 @@ export default function HomeScreen() {
             "Supabase Connection Failed",
             error instanceof Error
               ? error.message
-              : "An unexpected error occurred."
+              : "Unexpected error."
           );
         }
       }
@@ -39,6 +44,15 @@ export default function HomeScreen() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    console.log("NEXTSHELF AUTH STATE:", {
+      isLoggedIn: !!user,
+      userId: user?.id ?? null,
+      hasSession: !!session,
+      isLoading,
+    });
+  }, [user, session, isLoading]);
 
   return <DiscoveryScreen />;
 }
