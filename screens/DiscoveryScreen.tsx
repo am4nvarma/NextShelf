@@ -9,7 +9,7 @@ import {
 
 import BookCard from "../components/BookCard";
 import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { searchBooks } from "../services/bookApi";
 import type { OpenLibraryBook } from "../types/book";
 import { useRouter } from "expo-router";
@@ -37,7 +37,7 @@ export default function DiscoveryScreen() {
   // Keep a reference to the current pagination request.
   const paginationControllerRef = useRef<AbortController | null>(null);
 
-  const loadBooks = async (
+  const loadBooks = useCallback(async (
     query: string,
     signal?: AbortSignal,
     nextOffset: number = 0,
@@ -119,10 +119,10 @@ export default function DiscoveryScreen() {
         }
       }
     }
-  };
+  }, []);
 
   // Load the next page when the user scrolls.
-  const loadMoreBooks = () => {
+  const loadMoreBooks = useCallback(() => {
     if (
       isLoading ||
       isLoadingMoreRef.current ||
@@ -150,7 +150,7 @@ export default function DiscoveryScreen() {
       offset,
       searchVersionRef.current,
     );
-  };
+  }, [isLoading, books.length, offset, totalBooks, searchQuery, loadBooks]);
 
   // Handle a new search.
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function DiscoveryScreen() {
       controller.abort();
       paginationControllerRef.current?.abort();
     };
-  }, [searchQuery]);
+  }, [searchQuery, loadBooks]);
 
   // Retry the current search if it fails.
   const handleRetry = () => {
@@ -211,6 +211,32 @@ export default function DiscoveryScreen() {
       searchVersionRef.current,
     );
   };
+
+  const handleBookPress = useCallback(
+  (item: OpenLibraryBook) => {
+    router.push({
+      pathname: "/book/[id]",
+      params: {
+        id: item.key.replace("/works/", ""),
+        coverId: item.cover_i?.toString() ?? "",
+      },
+    });
+  },
+  [router]
+);
+
+const renderBookItem = useCallback(
+  ({ item }: { item: OpenLibraryBook }) => (
+    <BookCard
+      title={item.title}
+      author={item.author_name?.join(", ") ?? "Unknown author"}
+      publishedYear={item.first_publish_year}
+      coverId={item.cover_i}
+      onPress={() => handleBookPress(item)}
+    />
+  ),
+  [handleBookPress]
+);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -248,8 +274,10 @@ export default function DiscoveryScreen() {
           keyExtractor={(item) => item.key}
           numColumns={2}
           // Performance optimizations
+          removeClippedSubviews={true}
           initialNumToRender={6}
           maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={50}
           windowSize={5}
           onEndReached={loadMoreBooks}
           onEndReachedThreshold={0.5}
@@ -268,23 +296,7 @@ export default function DiscoveryScreen() {
               />
             ) : null
           }
-          renderItem={({ item }) => (
-            <BookCard
-              title={item.title}
-              author={item.author_name?.join(", ") ?? "Unknown author"}
-              publishedYear={item.first_publish_year}
-              coverId={item.cover_i}
-              onPress={() =>
-                router.push({
-                  pathname: "/book/[id]",
-                  params: {
-                    id: item.key.replace("/works/", ""),
-                    coverId: item.cover_i?.toString() ?? "",
-                  },
-                })
-              }
-            />
-          )}
+          renderItem={renderBookItem}
           ListEmptyComponent={
             <Text style={styles.emptySearch}>
               No Books Found. Try another search
