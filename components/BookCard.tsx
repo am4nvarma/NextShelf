@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
+import {Image} from "expo-image"
 
 type BookCardProps = {
   title: string;
@@ -18,19 +25,49 @@ function BookCard({
   coverId,
   onPress,
 }: BookCardProps) {
+  const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
+  React.useEffect(() => {
+  setImageLoaded(false);
+  setImageError(false);
+}, [coverId]);
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {coverId ? (
-        <Image
-          source={{
-            uri: `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`,
-          }}
-          style={styles.cover}
-          resizeMode="cover"
-        />
+      {coverId && !imageError ? (
+        <View style={styles.coverContainer}>
+          {!imageLoaded && (
+            <View style={styles.loadingPlaceholder}>
+              <ActivityIndicator size="small" color="#40C4AA" />
+            </View>
+          )}
+
+          <Image
+            source={{
+              uri: `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`,
+            }}
+            style={[styles.cover, { opacity: imageLoaded ? 1 : 0 }]}
+            contentFit="fill"
+            cachePolicy="memory-disk"
+            transition={200}
+            contentPosition={"center"}
+            onLoad={(event) => { 
+              setImageLoaded(true);
+
+              console.log("📸 COVER CACHE TEST:", {
+                coverId,
+                cacheType: event.cacheType,
+              });
+            }}
+            onLoadStart={() => setImageLoaded(false)}
+            onError={() => {
+              setImageError(true);
+              setImageLoaded(false);
+            }}
+          />
+        </View>
       ) : (
         <View style={styles.coverPlaceholder}>
-          <Text style={styles.placeholderText}>No Cover</Text>
+          <Text style={styles.placeholderText}> No cover</Text>
         </View>
       )}
 
@@ -107,5 +144,19 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: "#AAAAAA",
     fontSize: 13,
+  },
+  coverContainer: {
+    width: "100%",
+    height: 190,
+    marginBottom: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#292929",
+  },
+  loadingPlaceholder: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#292929",
   },
 });
