@@ -6,7 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import {Image} from "expo-image"
+import { Image } from "expo-image";
 
 type BookCardProps = {
   title: string;
@@ -28,9 +28,9 @@ function BookCard({
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   React.useEffect(() => {
-  setImageLoaded(false);
-  setImageError(false);
-}, [coverId]);
+    setImageLoaded(false);
+    setImageError(false);
+  }, [coverId]);
   return (
     <Pressable style={styles.card} onPress={onPress}>
       {coverId && !imageError ? (
@@ -50,13 +50,8 @@ function BookCard({
             cachePolicy="memory-disk"
             transition={200}
             contentPosition={"center"}
-            onLoad={(event) => { 
+            onLoad={() => {
               setImageLoaded(true);
-
-              console.log("📸 COVER CACHE TEST:", {
-                coverId,
-                cacheType: event.cacheType,
-              });
             }}
             onLoadStart={() => setImageLoaded(false)}
             onError={() => {
