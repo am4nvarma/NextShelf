@@ -11,7 +11,19 @@ import { supabase } from "../lib/supabase";
 type AuthContextType = {
     session : Session | null;
     user : User | null;
-    isLoading : boolean
+    isLoading : boolean;
+
+    signUp : (
+        email: string,
+        password : string 
+    ) => Promise<{ error: string | null}>;
+
+    signIn: (
+        email : string,
+        password : string
+    ) => Promise<{ error: string | null}>;
+
+    signOut: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,8 +78,84 @@ export function AuthProvider({
      };
     }, []);
 
+    // register new user 
+
+    const signUp = async (email: string, password: string) => {
+        try {
+            const {error} = await supabase.auth.signUp({
+                email: email.trim(),
+                password,
+            });
+
+            if (error) {
+                return {error: error.message};
+            }
+
+            return {error: null};
+        } catch (error) {
+            return {
+                error:
+                error instanceof Error
+                ? error.message
+                : "Something went wrong during signUp",
+            };
+        }
+    };
+
+    // Log in an existing user
+    const signIn = async (email:string, password:string) => {
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+               email :email.trim(),
+               password,
+            });
+
+            if (error) {
+                return {error : error.message};
+            }
+
+            return {error:null};
+        } catch ( error ) {
+            return {
+                error:
+                error instanceof Error
+                ? error.message
+                : "Something went wrong during login.",
+            };
+        }
+    };
+
+    // logOut the current user
+    const signOut = async () => {
+        try {
+            const {error} = await supabase.auth.signOut();
+
+            if (error) {
+                return { error: error.message};
+            }
+
+            return {error : null};
+        } catch (error) {
+            return {
+                error:
+                error instanceof Error
+                ? error.message
+                : "Something went wrong during logout.",
+            };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ session, user, isLoading}}>
+        <AuthContext.Provider
+         value={{ 
+            session, 
+            user, 
+            isLoading,
+            signUp,
+            signIn,
+            signOut,
+            }}
+            >
             {children}
         </AuthContext.Provider>
     );
