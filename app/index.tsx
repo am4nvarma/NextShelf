@@ -5,6 +5,7 @@ import { Alert } from "react-native";
 import DiscoveryScreen from "../screens/DiscoveryScreen";
 import { testSupabaseConnection } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { Redirect } from "expo-router";
 
 export default function HomeScreen() {
   const { user, session, isLoading } = useAuth();
@@ -54,5 +55,5 @@ export default function HomeScreen() {
     });
   }, [user, session, isLoading]);
 
-  return <DiscoveryScreen />;
+  return <Redirect href="/signup" />;
 }
