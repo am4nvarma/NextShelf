@@ -55,5 +55,5 @@ export default function HomeScreen() {
     });
   }, [user, session, isLoading]);
 
-  return <Redirect href="/signup" />;
+  return <DiscoveryScreen />;
 }
