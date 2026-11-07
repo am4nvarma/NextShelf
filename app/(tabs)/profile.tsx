@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -21,46 +20,40 @@ export default function ProfileScreen() {
     user?.user_metadata?.name ||
     "NextShelf Reader";
 
-  const username = user?.email
-    ? `@${user.email.split("@")[0]}`
-    : "@reader";
+  const username = user?.email ? `@${user.email.split("@")[0]}` : "@reader";
 
   const showComingSoon = (feature: string) => {
     Alert.alert(feature, "This feature will be available soon!");
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out of NextShelf?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out",
-          style: "destructive",
-          onPress: async () => {
-            const { error } = await signOut();
+    Alert.alert("Log Out", "Are you sure you want to log out of NextShelf?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log Out",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await signOut();
 
-            if (error) {
-              Alert.alert("Logout Failed", error);
-            }
-          },
+          if (error) {
+            Alert.alert("Logout Failed", error);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
       "Delete Account",
-      "Account deletion is not available yet. We'll add a secure deletion process later."
+      "Account deletion is not available yet. We'll add a secure deletion process later.",
     );
   };
 
   const renderOption = (
     icon: React.ComponentProps<typeof Ionicons>["name"],
     title: string,
-    onPress: () => void
+    onPress: () => void,
   ) => (
     <Pressable
       style={styles.option}
@@ -79,19 +72,13 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable
-          onPress={() => router.replace("/")}
-          hitSlop={10}
-        >
+        <Pressable onPress={() => router.replace("/")} hitSlop={10}>
           <Ionicons name="chevron-back" size={25} color="#FFFFFF" />
         </Pressable>
 
         <Text style={styles.headerTitle}>Profile</Text>
 
-        <Pressable
-          onPress={() => showComingSoon("Settings")}
-          hitSlop={10}
-        >
+        <Pressable onPress={() => showComingSoon("Settings")} hitSlop={10}>
           <Ionicons name="settings-outline" size={21} color="#FFFFFF" />
         </Pressable>
       </View>
@@ -110,39 +97,49 @@ export default function ProfileScreen() {
 
           <View style={styles.optionsContainer}>
             {renderOption("person-outline", "My Details", () =>
-              showComingSoon("My Details")
+              showComingSoon("My Details"),
             )}
 
             {renderOption("globe-outline", "App Language", () =>
-              showComingSoon("App Language")
+              showComingSoon("App Language"),
             )}
 
             {renderOption("notifications-outline", "Notifications", () =>
-              showComingSoon("Notifications")
+              showComingSoon("Notifications"),
             )}
 
             {renderOption("shield-checkmark-outline", "Privacy Policy", () =>
-              showComingSoon("Privacy Policy")
+              showComingSoon("Privacy Policy"),
             )}
           </View>
         </View>
 
         <View style={styles.accountActions}>
-          <Pressable
-            style={styles.actionButton}
-            onPress={handleLogout}
-          >
+          <Pressable style={styles.actionButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color="#40C4AA" />
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.actionButton}
-            onPress={handleDeleteAccount}
-          >
+          <Pressable style={styles.actionButton} onPress={handleDeleteAccount}>
             <Ionicons name="trash-outline" size={19} color="#40C4AA" />
             <Text style={styles.deleteText}>Delete Account</Text>
           </Pressable>
+
+          <Pressable 
+          onPress = { () => router.push("/genres")}
+          style={{
+            backgroundColor: "#40C4AA",
+            padding:16,
+            borderRadius:12,
+            margin: 20,
+          }}
+          >
+            <Text style = {{ color: "080000", fontWeight:"bold" }}>
+            Genre Onboarding Test
+            </Text>
+          </Pressable>
+
+          
         </View>
       </ScrollView>
     </SafeAreaView>
