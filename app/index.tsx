@@ -55,5 +55,5 @@ export default function HomeScreen() {
     });
   }, [user, session, isLoading]);
 
-  return <DiscoveryScreen />;
+  return <DiscoveryScreen />
 }
