@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router"; 
 
 const genres = [
   { name: "Fantasy", icon: "sparkles-outline" },
@@ -24,6 +25,8 @@ const genres = [
 
 export default function GenreScreen() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  
+  const router = useRouter();
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((previous) =>
@@ -35,7 +38,12 @@ export default function GenreScreen() {
 
   // We will connect this to Author Selection in the next step.
   const handleContinue = () => {
-    console.log("SELECTED NEXTSHELF GENRES:", selectedGenres);
+    router.push({
+        pathname: "/authors",
+        params: {
+            genres: JSON.stringify(selectedGenres)
+        },
+    });
   };
 
   return (

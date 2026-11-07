@@ -38,3 +38,21 @@ export type BookAuthor = {
         value: string;
     };
 };  
+
+export type AuthorSearchDocument = {
+  author_key?: string[];
+  author_name?: string[];
+};
+
+export type AuthorSearchResponse = {
+  docs: AuthorSearchDocument[];
+  numFound: number;
+};
+
+export type AuthorRecommendation = {
+  key: string;
+  name: string;
+  genres: string[];
+  workCount: number;
+  photoUrl?: string;
+};
