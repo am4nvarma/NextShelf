@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim || !password) {
+    if (!email.trim || !password.trim) {
       Alert.alert(
         "Missing information",
         "Please Enter Your email and password",
