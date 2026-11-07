@@ -167,13 +167,29 @@ export default function SignupScreen() {
               )}
             </Pressable>
 
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account?</Text>
+            <Pressable
+              style={styles.loginCard}
+              onPress={() => router.push("/login")}
+              android_ripple={{ color: "#254D46" }}
+            >
+              <View style={styles.loginCardContent}>
+                <View style={styles.loginIcon}>
+                  <Ionicons name="log-in-outline" size={25} color="#40C4AA" />
+                </View>
 
-              <Pressable onPress={() => router.push("/login")}>
-                <Text style={styles.loginLink}> Log In</Text>
-              </Pressable>
-            </View>
+                <View style={styles.loginInfo}>
+                  <Text style={styles.loginTitle}>
+                    Already have an account?
+                  </Text>
+                  <Text style={styles.loginSubtitle}>
+                    Welcome back! Log in to continue reading.
+                  </Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={22} color="#40C4AA" />
+              </View>
+            </Pressable>
+            
           </View>
         </View>
       </ScrollView>
@@ -281,5 +297,44 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     backgroundColor: "#080000",
+  },
+  loginCard: {
+    marginTop: 28,
+    backgroundColor: "#191919",
+    borderWidth: 1,
+    borderColor: "#40C4AA",
+    borderRadius: 14,
+    padding: 16,
+  },
+
+  loginCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  loginIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#203B35",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loginInfo: {
+    flex: 1,
+  },
+
+  loginTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+
+  loginSubtitle: {
+    color: "#AAAAAA",
+    fontSize: 12,
+    marginTop: 5,
   },
 });

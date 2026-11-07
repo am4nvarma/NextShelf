@@ -67,8 +67,9 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.logo}>Next</Text>
-          <Text style={styles.logoAccent}>Shelf</Text>
+          <Text style={styles.logo}>
+            Next<Text style={styles.logoAccent}>Shelf</Text>
+          </Text>
 
           <Text style={styles.heading}>Welcome Back</Text>
 
@@ -100,21 +101,21 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color="#999" />
 
-            <TextInput 
-            style = {styles.input}
-            placeholder="Enter Your PassWord"
-            placeholderTextColor="#777"
-            value = {password}
-            onChangeText={setPassword}
-            secureTextEntry = {!showPassword}
-            autoCapitalize="none"
-            textContentType="password"
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Your PassWord"
+              placeholderTextColor="#777"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
 
             <Pressable onPress={() => setShowPassword(!showPassword)}>
-             <Ionicons
+              <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={21}
                 color="#999"
@@ -123,9 +124,9 @@ export default function LoginScreen() {
           </View>
 
           <Pressable
-          style = {styles.loginButton}
-          onPress = {handleLogin}
-          disabled = {isLoading}
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#080000" />
@@ -134,13 +135,27 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          <View style = {styles.footer}>
-            <Text style = {styles.footerText}>Don't have an account?{""}</Text>
+          <Pressable
+            style={styles.signupCard}
+            onPress={() => router.push("/signup")}
+            android_ripple={{ color: "#254D46" }}
+          >
+            <View style={styles.signupCardContent}>
+              <View style={styles.signupIcon}>
+                <Ionicons name="person-add-outline" size={24} color="#40C4AA" />
+              </View>
 
-            <Pressable onPress = {() => router.push ("/signup")}>
-            <Text style = {styles.signupText}>Sign Up</Text>
-            </Pressable>
-          </View>
+              <View style={styles.signupInfo}>
+                <Text style={styles.signupTitle}>New to NextShelf?</Text>
+
+                <Text style={styles.signupSubtitle}>
+                  Create an account and start your reading journey.
+                </Text>
+              </View>
+
+              <Ionicons name="chevron-forward" size={22} color="#40C4AA" />
+            </View>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -233,20 +248,43 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
+  signupCard: {
     marginTop: 28,
+    backgroundColor: "#191919",
+    borderWidth: 1,
+    borderColor: "#40C4AA",
+    borderRadius: 14,
+    padding: 16,
   },
 
-  footerText: {
-    color: "#999",
-    fontSize: 14,
+  signupCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
 
-  signupText: {
-    color: "#40C4AA",
-    fontSize: 14,
+  signupIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#203B35",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  signupInfo: {
+    flex: 1,
+  },
+
+  signupTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "bold",
+  },
+
+  signupSubtitle: {
+    color: "#AAAAAA",
+    fontSize: 12,
+    marginTop: 5,
   },
 });
