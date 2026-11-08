@@ -8,17 +8,22 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getPersonalizedAuthorRecommendations } from "../../services/bookApi";
 import type { AuthorRecommendation } from "../../types/book";
+import { useAuth } from "../../contexts/AuthContext";
+import { saveUserPreferences } from "../../services/preferencesApi"; 
 
 export default function AuthorSelectionScreen() {
   const { genres: genresParam } = useLocalSearchParams<{
     genres?: string | string[];
   }>();
+
+  const router = useRouter();
+  const { user } = useAuth();
 
   // Safely recover the genres sent from the previous screen.
   const selectedGenres = useMemo(() => {
@@ -44,6 +49,9 @@ export default function AuthorSelectionScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("") 
 
   // Fetch recommendations whenever the selected genres change.
   useEffect(() => {
@@ -93,10 +101,37 @@ export default function AuthorSelectionScreen() {
     );
   };
 
-  const handleContinue = () => {
-    console.log("NEXTSHELF SELECTED GENRES:", selectedGenres);
-    console.log("NEXTSHELF SELECTED AUTHORS:", selectedAuthors);
-  };
+const handleContinue = async () => {
+  if (!user) {
+    setSaveError("Please log in before saving your preferences.");
+    return;
+  }
+
+  try {
+    setIsSaving(true);
+    setSaveError("");
+
+    await saveUserPreferences({
+      userId: user.id,
+      selectedGenres,
+      selectedAuthors,
+    });
+
+    console.log("NEXTSHELF PREFERENCES SAVED SUCCESSFULLY");
+
+    router.replace("/");
+  } catch (error) {
+    console.error("Preference saving error:", error);
+
+    setSaveError(
+      error instanceof Error
+        ? error.message
+        : "Unable to save your preferences. Please try again.",
+    );
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const renderAuthor = ({
     item,
@@ -215,16 +250,35 @@ export default function AuthorSelectionScreen() {
             </View>
           )
         }
-        ListFooterComponent={
-          authors.length > 0 ? (
-            <Pressable
-              style={styles.continueButton}
-              onPress={handleContinue}
-            >
-              <Text style={styles.continueText}>Continue</Text>
-            </Pressable>
-          ) : null
-        }
+ListFooterComponent={
+  authors.length > 0 ? (
+    <View>
+      {saveError !== "" && (
+        <Text style={styles.errorText}>
+          {saveError}
+        </Text>
+      )}
+
+      <Pressable
+        style={[
+          styles.continueButton,
+          isSaving && { opacity: 0.6 },
+        ]}
+        onPress={handleContinue}
+        disabled={isSaving}
+      >
+        {isSaving ? (
+          <ActivityIndicator color="#080000" />
+        ) : (
+          <Text style={styles.continueText}>
+            Continue
+          </Text>
+        )}
+      </Pressable>
+    </View>
+  ) : null
+}
+
       />
     </SafeAreaView>
   );
