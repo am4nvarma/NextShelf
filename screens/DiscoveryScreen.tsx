@@ -242,7 +242,7 @@ const renderBookItem = useCallback(
     <SafeAreaView style={styles.container}>
       <Text style={styles.brand}>NextShelf</Text>
 
-      <Text style={styles.heading}>Discover Books</Text>
+      <Text style={styles.heading}>Book Recommendations</Text>
 
       <View style={styles.searchContainer}>
         <Ionicons name="search-outline" size={20} color="#999999" />
@@ -316,9 +316,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   heading: {
-    fontSize: 25,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#ffffffb6",
     marginBottom: 20,
     marginLeft: 5,
   },
@@ -326,8 +326,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: "#40C4AA",
-    marginBottom: 10,
     marginLeft: 5,
+    marginTop : -25
   },
   searchContainer: {
     flexDirection: "row",

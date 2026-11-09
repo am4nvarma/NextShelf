@@ -6,6 +6,8 @@ import {
 } from "../types/book";
 
 
+
+
 const BASE_URL = "https://openlibrary.org/search.json";
 
 export async function searchBooks(
@@ -42,8 +44,15 @@ export async function getBookDetails(bookKey: string) {
   return data;
 }
 
-export async function getAuthorDetails(authorKey: string): Promise<BookAuthor> {
-  const url = `https://openlibrary.org${authorKey}.json`;
+
+export async function getAuthorDetails(
+  authorKey: string,
+): Promise<BookAuthor> {
+  const normalizedKey = authorKey.startsWith("/authors/")
+    ? authorKey
+    : `/authors/${authorKey}`;
+
+  const url = `https://openlibrary.org${normalizedKey}.json`;
 
   const response = await fetch(url);
 
@@ -55,6 +64,7 @@ export async function getAuthorDetails(authorKey: string): Promise<BookAuthor> {
 
   return data;
 }
+
 
 export async function getAuthorsByGenre(
   genre: string,
