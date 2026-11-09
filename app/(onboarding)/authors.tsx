@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -12,10 +11,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getPersonalizedAuthorRecommendations } from "../../services/bookApi";
+import {
+  getPersonalizedAuthorRecommendations,
+  getAuthorDetails,
+} from "../../services/bookApi";
 import type { AuthorRecommendation } from "../../types/book";
 import { useAuth } from "../../contexts/AuthContext";
-import { saveUserPreferences } from "../../services/preferencesApi"; 
+import {
+  saveUserPreferences,
+  getUserPreferences,
+} from "../../services/preferencesApi";
 
 export default function AuthorSelectionScreen() {
   const { genres: genresParam } = useLocalSearchParams<{
@@ -43,7 +48,12 @@ export default function AuthorSelectionScreen() {
   }, [genresParam]);
 
   const [authors, setAuthors] = useState<AuthorRecommendation[]>([]);
+  const [previouslySelectedAuthors, setPreviouslySelectedAuthors] = useState<
+    AuthorRecommendation[]
+  >([]);
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
+  const [preferencesError, setPreferencesError] = useState("");
   const [failedImages, setFailedImages] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +61,48 @@ export default function AuthorSelectionScreen() {
   const [retryCount, setRetryCount] = useState(0);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("") 
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSavedAuthors() {
+      if (!user) {
+        setPreferencesError("Please log in to continue.");
+        setIsLoadingPreferences(false);
+        return;
+      }
+
+      try {
+        setIsLoadingPreferences(true);
+        setPreferencesError("");
+
+        const preferences = await getUserPreferences(user.id);
+
+        if (isMounted) {
+          setSelectedAuthors(preferences?.selected_authors ?? []);
+        }
+      } catch (error) {
+        console.error("Loading saved authors failed:", error);
+
+        if (isMounted) {
+          setPreferencesError(
+            "Unable to load your saved authors. Please try again.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingPreferences(false);
+        }
+      }
+    }
+
+    loadSavedAuthors();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   // Fetch recommendations whenever the selected genres change.
   useEffect(() => {
@@ -68,11 +119,10 @@ export default function AuthorSelectionScreen() {
         setIsLoading(true);
         setError("");
 
-        const recommendations =
-          await getPersonalizedAuthorRecommendations(
-            selectedGenres,
-            controller.signal,
-          );
+        const recommendations = await getPersonalizedAuthorRecommendations(
+          selectedGenres,
+          controller.signal,
+        );
 
         setAuthors(recommendations);
       } catch (err) {
@@ -91,6 +141,76 @@ export default function AuthorSelectionScreen() {
 
     return () => controller.abort();
   }, [selectedGenres, retryCount]);
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadMissingAuthors() {
+    // Wait until both saved selections and recommendations have loaded.
+    if (isLoadingPreferences || isLoading) return;
+
+    const missingAuthorKeys = selectedAuthors.filter(
+      (key) => !authors.some((author) => author.key === key),
+    );
+
+    if (missingAuthorKeys.length === 0) {
+      setPreviouslySelectedAuthors([]);
+      return;
+    }
+
+    try {
+      const results = await Promise.allSettled(
+        missingAuthorKeys.map((key) => getAuthorDetails(key)),
+      );
+
+      if (!isMounted) return;
+
+     const recoveredAuthors = results
+  .map((result, index): AuthorRecommendation | null => {
+    if (result.status !== "fulfilled") {
+      console.warn(
+        "Could not recover saved author:",
+        missingAuthorKeys[index],
+      );
+      return null;
+    }
+
+    const savedKey = missingAuthorKeys[index];
+    const authorId = savedKey.replace("/authors/", "");
+
+    return {
+      key: savedKey,
+      name: result.value.name,
+      genres: ["Previously selected"],
+      workCount: 0,
+      photoUrl: `https://covers.openlibrary.org/a/olid/${authorId}-M.jpg`,
+    };
+  })
+  .filter(
+    (author): author is AuthorRecommendation => author !== null,
+  );
+
+setPreviouslySelectedAuthors(recoveredAuthors);
+    } catch (error) {
+      console.error("Recovering previously selected authors failed:", error);
+    }
+  }
+
+  loadMissingAuthors();
+
+  return () => {
+    isMounted = false;
+  };
+}, [
+  authors,
+  selectedAuthors,
+  isLoading,
+  isLoadingPreferences,
+]);
+  
+
+  
+
+  
 
   // Select or deselect an author.
   const toggleAuthor = (authorKey: string) => {
@@ -101,52 +221,47 @@ export default function AuthorSelectionScreen() {
     );
   };
 
-const handleContinue = async () => {
-  if (!user) {
-    setSaveError("Please log in before saving your preferences.");
-    return;
-  }
+  
 
-  try {
-    setIsSaving(true);
-    setSaveError("");
+  const handleContinue = async () => {
+    if (!user) {
+      setSaveError("Please log in before saving your preferences.");
+      return;
+    }
 
-    await saveUserPreferences({
-      userId: user.id,
-      selectedGenres,
-      selectedAuthors,
-    });
+    try {
+      setIsSaving(true);
+      setSaveError("");
 
-    console.log("NEXTSHELF PREFERENCES SAVED SUCCESSFULLY");
+      await saveUserPreferences({
+        userId: user.id,
+        selectedGenres,
+        selectedAuthors,
+      });
 
-    router.replace("/");
-  } catch (error) {
-    console.error("Preference saving error:", error);
+      console.log("NEXTSHELF PREFERENCES SAVED SUCCESSFULLY");
 
-    setSaveError(
-      error instanceof Error
-        ? error.message
-        : "Unable to save your preferences. Please try again.",
-    );
-  } finally {
-    setIsSaving(false);
-  }
-};
+      router.replace("/");
+    } catch (error) {
+      console.error("Preference saving error:", error);
 
-  const renderAuthor = ({
-    item,
-  }: {
-    item: AuthorRecommendation;
-  }) => {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your preferences. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const renderAuthor = ({ item }: { item: AuthorRecommendation }) => {
     const isSelected = selectedAuthors.includes(item.key);
     const hasImage = item.photoUrl && !failedImages.includes(item.key);
 
     return (
       <Pressable
-        style={[
-          styles.authorCard,
-          isSelected && styles.selectedCard,
-        ]}
+        style={[styles.authorCard, isSelected && styles.selectedCard]}
         onPress={() => toggleAuthor(item.key)}
       >
         <View style={styles.imageContainer}>
@@ -204,13 +319,11 @@ const handleContinue = async () => {
           <View>
             <Text style={styles.step}>STEP 2 OF 2</Text>
 
-            <Text style={styles.title}>
-              Choose Your Favourite Authors
-            </Text>
+            <Text style={styles.title}>Choose Your Favourite Authors</Text>
 
             <Text style={styles.subtitle}>
-              Discover authors based on the genres you love.
-              Select as many as you like.
+              Discover authors based on the genres you love. Select as many as
+              you like.
             </Text>
 
             <View style={styles.counterContainer}>
@@ -221,8 +334,28 @@ const handleContinue = async () => {
                 {selectedGenres.length} genres
               </Text>
             </View>
+
+            {previouslySelectedAuthors.length > 0 && (
+              <View style={styles.previousAuthorsSection}>
+                <Text style={styles.previousAuthorsTitle}>
+                  Previously Selected Authors
+                </Text>
+
+                <View style={styles.previousAuthorsGrid}>
+                  {previouslySelectedAuthors.map((item) => (
+                    <View key={item.key}>{renderAuthor({ item })}</View>
+                  ))}
+                </View>
+
+                <Text style={styles.previousAuthorsHint}>
+                  Your saved authors are kept here even when they aren't in the
+                  latest recommendations.
+                </Text>
+              </View>
+            )}
           </View>
         }
+
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.centerContainer}>
@@ -250,35 +383,27 @@ const handleContinue = async () => {
             </View>
           )
         }
-ListFooterComponent={
-  authors.length > 0 ? (
-    <View>
-      {saveError !== "" && (
-        <Text style={styles.errorText}>
-          {saveError}
-        </Text>
-      )}
+        ListFooterComponent={
+          authors.length > 0 ? (
+            <View>
+              {saveError !== "" && (
+                <Text style={styles.errorText}>{saveError}</Text>
+              )}
 
-      <Pressable
-        style={[
-          styles.continueButton,
-          isSaving && { opacity: 0.6 },
-        ]}
-        onPress={handleContinue}
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color="#080000" />
-        ) : (
-          <Text style={styles.continueText}>
-            Continue
-          </Text>
-        )}
-      </Pressable>
-    </View>
-  ) : null
-}
-
+              <Pressable
+                style={[styles.continueButton, isSaving && { opacity: 0.6 }]}
+                onPress={handleContinue}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color="#080000" />
+                ) : (
+                  <Text style={styles.continueText}>Continue</Text>
+                )}
+              </Pressable>
+            </View>
+          ) : null
+        }
       />
     </SafeAreaView>
   );
@@ -435,4 +560,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  previousAuthorsSection: {
+  marginBottom: 25,
+},
+
+previousAuthorsTitle: {
+  color: "#FFFFFF",
+  fontSize: 17,
+  fontWeight: "bold",
+  marginBottom: 14,
+},
+
+previousAuthorsGrid: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  rowGap: 14,
+},
+
+previousAuthorsHint: {
+  color: "#888888",
+  fontSize: 12,
+  marginTop: 12,
+  lineHeight: 18,
+},
 });

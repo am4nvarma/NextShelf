@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim || !password.trim) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert(
         "Missing information",
         "Please Enter Your email and password",
@@ -50,7 +50,7 @@ export default function LoginScreen() {
         return;
       }
 
-      router.replace("/");
+      router.replace("/genres");
     } catch {
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
