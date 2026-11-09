@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router"; 
+import { useAuth } from "../../contexts/AuthContext";
+import { getUserPreferences } from "../../services/preferencesApi";
 
 const genres = [
   { name: "Fantasy", icon: "sparkles-outline" },
@@ -25,8 +27,64 @@ const genres = [
 
 export default function GenreScreen() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
+  const  [preferencesError, setPreferencesError] = useState("");
   
   const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+  let isMounted = true;
+
+  async function loadPreferences() {
+    if (!user) {
+      setPreferencesError("Please log in to continue.");
+      setIsLoadingPreferences(false);
+      return;
+    }
+
+    try {
+      setIsLoadingPreferences(true);
+      setPreferencesError("");
+
+      const preferences = await getUserPreferences(user.id);
+
+      console.log(
+  "GENRES RECEIVED FROM SUPABASE:",
+  preferences?.selected_genres
+);
+
+console.log(
+  "GENRE COUNT RECEIVED:",
+  preferences?.selected_genres?.length
+);
+
+
+      if (isMounted && preferences) {
+        setSelectedGenres(preferences.selected_genres ?? []);
+      }
+    } catch (error) {
+      console.error("Loading genre preferences failed:", error);
+
+      if (isMounted) {
+        setPreferencesError(
+          "Unable to load your saved genres. Please try again.",
+        );
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoadingPreferences(false);
+      }
+    }
+  }
+
+  loadPreferences();
+
+  return () => {
+    isMounted = false;
+  };
+}, [user?.id]);
+
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((previous) =>
@@ -46,94 +104,116 @@ export default function GenreScreen() {
     });
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.progressContainer}>
-          <View style={styles.progressActive} />
-          <View style={styles.progressInactive} />
-        </View>
 
-        <Text style={styles.stepText}>What do you love{"/n"}to read?</Text>
+return (
+  <SafeAreaView style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.progressContainer}>
+        <View style={styles.progressActive} />
+        <View style={styles.progressInactive} />
+      </View>
 
-        <Text style={styles.subtitle}>
-          Choose your favourite genres and we'll create a bookshelf that feels
-          like yours.
+      <Text style={styles.stepText}>
+        What do you love{"\n"}to read?
+      </Text>
+
+      <Text style={styles.subtitle}>
+        Choose your favourite genres and we'll create a bookshelf that feels
+        like yours.
+      </Text>
+
+      <View style={styles.selectionInfo}>
+        <Text style={styles.selectionTitle}>Choose your genres</Text>
+
+        <Text style={styles.selectionCount}>
+          {selectedGenres.length} selected
         </Text>
+      </View>
 
-        <View style={styles.selectionInfo}>
-          <Text style={styles.selectionTitle}>Choose your genres</Text>
+      <View style={styles.genreGrid}>
+        {genres.map((genre) => {
+          const isSelected = selectedGenres.includes(genre.name);
 
-          <Text style={styles.selectionCount}>
-            {selectedGenres.length} selected
+          return (
+            <Pressable
+              key={genre.name}
+              style={[
+                styles.genreCard,
+                isSelected && styles.genreCardSelected,
+              ]}
+              onPress={() => toggleGenre(genre.name)}
+            >
+              <Ionicons
+                name={genre.icon as React.ComponentProps<typeof Ionicons>["name"]}
+                size={23}
+                color={isSelected ? "#40C4AA" : "#AAAAAA"}
+              />
+
+              <Text
+                style={[
+                  styles.genreName,
+                  isSelected && styles.genreNameSelected,
+                ]}
+              >
+                {genre.name}
+              </Text>
+
+              {isSelected && (
+                <View style={styles.checkIcon}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={17}
+                    color="#40C4AA"
+                  />
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={styles.helperText}>
+        You can select multiple genres. You can change your preferences later.
+      </Text>
+
+      {isLoadingPreferences ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#40C4AA" />
+          <Text style={styles.helperText}>
+            Loading your preferences...
           </Text>
         </View>
+      ) : (
+        <>
+          {preferencesError !== "" && (
+            <Text style={styles.errorText}>
+              {preferencesError}
+            </Text>
+          )}
 
-        <View style={styles.genreGrid}>
-          {genres.map((genre) => {
-            const isSelected = selectedGenres.includes(genre.name);
+          <Pressable
+            style={[
+              styles.continueButton,
+              (selectedGenres.length === 0 || preferencesError !== "") &&
+                styles.continueDisabled,
+            ]}
+            onPress={handleContinue}
+            disabled={
+              selectedGenres.length === 0 || preferencesError !== ""
+            }
+          >
+            <Text style={styles.continueText}>Continue</Text>
+            <Ionicons name="arrow-forward" size={20} color="#080000" />
+          </Pressable>
+        </>
+      )}
+    </ScrollView>
+  </SafeAreaView>
+);
 
-            return (
-              <Pressable
-                key={genre.name}
-                style={[
-                  styles.genreCard,
-                  isSelected && styles.genreCardSelected,
-                ]}
-                onPress={() => toggleGenre(genre.name)}
-              >
-                <Ionicons
-                  name={genre.icon as React.ComponentProps<typeof Ionicons>["name"]}
-                  size={23}
-                  color={isSelected ? "#40C4AA" : "#AAAAAA"}
-                />
-
-                <Text
-                  style={[
-                    styles.genreName,
-                    isSelected && styles.genreNameSelected,
-                  ]}
-                >
-                  {genre.name}
-                </Text>
-
-                {isSelected && (
-                  <View style={styles.checkIcon}>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={17}
-                      color="#40C4AA"
-                    />
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={styles.helperText}>
-          You can select multiple genres. You can change your
-          preferences later.
-        </Text>
-
-        <Pressable
-          style={[
-            styles.continueButton,
-            selectedGenres.length === 0 && styles.continueDisabled,
-          ]}
-          onPress={handleContinue}
-          disabled={selectedGenres.length === 0}
-        >
-          <Text style={styles.continueText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color="#080000" />
-        </Pressable>    
-
-      </ScrollView>
-    </SafeAreaView>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -257,4 +337,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
   },
+  
+loadingContainer: {
+  alignItems: "center",
+  paddingVertical: 30,
+},
+
+errorText: {
+  color: "#FF7777",
+  fontSize: 13,
+  marginTop: 15,
+  textAlign: "center",
+},
+
 });
