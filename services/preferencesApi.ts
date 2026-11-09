@@ -31,3 +31,28 @@ export async function saveUserPreferences({
     throw new Error(error.message);
   }
 }
+
+export type UserPreferences = {
+  user_id : string;
+  selected_genres : string[];
+  selected_authors : string[];
+  onboarding_completed : boolean;
+}
+
+export async function getUserPreferences(
+  userId:string,
+) : Promise<UserPreferences | null>{
+  const {data, error} = await supabase
+  .from("user_preferences")
+  .select(
+    "user_id, selected_genres, selected_authors, onboarding_completed", 
+  )
+  .eq("user_id", userId)
+  .maybeSingle();
+
+  if (error) {
+    throw new Error (error.message);
+  }
+
+  return data;
+}
