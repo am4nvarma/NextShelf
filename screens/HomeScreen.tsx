@@ -1,10 +1,21 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  FlatList,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { getUserPreferences } from "../services/preferencesApi";
 
-import { getPersonalizedBooksByGenres, getAuthorDetails } from "../services/bookApi";
+import {
+  getPersonalizedBooksByGenres,
+  getAuthorDetails,
+  getPopularBooksByGenres,
+} from "../services/bookApi";
 import type { OpenLibraryBook, BookAuthor } from "../types/book";
 import BookCard from "../components/BookCard";
 import { Image } from "expo-image";
@@ -30,9 +41,12 @@ export default function HomeScreen() {
   const [isLoadingBooks, setIsLoadingBooks] = useState(false);
   const [booksError, setBooksError] = useState(false);
 
-    const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
-    const [favoriteAuthors, setFavoriteAuthors] = useState<BookAuthor[]>([]);
-    const [isLoadingAuthors, setIsLoadingAuthors] = useState(false);
+  const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
+  const [favoriteAuthors, setFavoriteAuthors] = useState<BookAuthor[]>([]);
+  const [isLoadingAuthors, setIsLoadingAuthors] = useState(false);
+
+  const [moreGenreBooks, setMoreGenreBooks] = useState<OpenLibraryBook[]>([]);
+  const [isLoadingMoreBooks, setIsLoadingMoreBooks] = useState(true);
 
   const router = useRouter();
 
@@ -53,7 +67,6 @@ export default function HomeScreen() {
         if (isMounted && preferences) {
           setSelectedGenres(preferences.selected_genres ?? []);
           setSelectedAuthors(preferences.selected_authors ?? []);
-
         }
       } catch (error) {
         console.error("Home preferences loading failed:", error);
@@ -72,97 +85,137 @@ export default function HomeScreen() {
   }, [user?.id]);
 
   useEffect(() => {
-  if (isLoadingPreferences) return;
+    if (isLoadingPreferences) return;
 
-  if (selectedGenres.length === 0) {
-    setRecommendedBooks([]);
-    setIsLoadingBooks(false);
-    return;
-  }
+    if (selectedGenres.length === 0) {
+      setRecommendedBooks([]);
+      setIsLoadingBooks(false);
+      return;
+    }
 
-  const controller = new AbortController();
+    const controller = new AbortController();
 
-  async function loadRecommendations() {
-    try {
-      setIsLoadingBooks(true);
-      setBooksError(false);
+    async function loadRecommendations() {
+      try {
+        setIsLoadingBooks(true);
+        setBooksError(false);
 
-      const books = await getPersonalizedBooksByGenres(
-        selectedGenres,
-        controller.signal,
-      );
+        const books = await getPersonalizedBooksByGenres(
+          selectedGenres,
+          controller.signal,
+        );
 
-      if (!controller.signal.aborted) {
-        setRecommendedBooks(books);
-      }
-    } catch (error) {
-      if (controller.signal.aborted) return;
+        if (!controller.signal.aborted) {
+          setRecommendedBooks(books);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
 
-      console.error("Loading personalized books failed:", error);
-      setBooksError(true);
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsLoadingBooks(false);
+        console.error("Loading personalized books failed:", error);
+        setBooksError(true);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingBooks(false);
+        }
       }
     }
-  }
 
-  loadRecommendations();
+    loadRecommendations();
 
-  return () => {
-    controller.abort();
-  };
-}, [selectedGenres, isLoadingPreferences]);
+    return () => {
+      controller.abort();
+    };
+  }, [selectedGenres, isLoadingPreferences]);
 
-useEffect(() => {
-  if (isLoadingPreferences) return;
+  useEffect(() => {
+    if (isLoadingPreferences) return;
 
-  if (selectedAuthors.length === 0) {
-    setFavoriteAuthors([]);
-    setIsLoadingAuthors(false);
-    return;
-  }
+    if (selectedGenres.length === 0) {
+      setMoreGenreBooks([]);
+      setIsLoadingMoreBooks(false);
+      return;
+    }
 
-  let isMounted = true;
+    const controller = new AbortController();
 
-  async function loadFavoriteAuthors() {
-    try {
-      setIsLoadingAuthors(true);
+    async function loadMoreGenreBooks() {
+      try {
+        setIsLoadingMoreBooks(true);
 
-      const authors = await Promise.all(
-        selectedAuthors.map((authorKey) =>
-          getAuthorDetails(authorKey),
-        ),
-      );
+        const excludedBookKeys = recommendedBooks.map((book) => book.key);
 
-      if (isMounted) {
-        setFavoriteAuthors(authors);
-      }
-    } catch (error) {
-      console.error("Loading favorite authors failed:", error);
-    } finally {
-      if (isMounted) {
-        setIsLoadingAuthors(false);
+        const books = await getPopularBooksByGenres(
+          selectedGenres,
+          excludedBookKeys,
+          controller.signal,
+        );
+
+        setMoreGenreBooks(books);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Loading more genre books failed:", error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingMoreBooks(false);
+        }
       }
     }
-  }
 
-  loadFavoriteAuthors();
+    loadMoreGenreBooks();
 
-  return () => {
-    isMounted = false;
+    return () => {
+      controller.abort();
+    };
+  }, [selectedGenres, recommendedBooks, isLoadingPreferences]);
+
+  useEffect(() => {
+    if (isLoadingPreferences) return;
+
+    if (selectedAuthors.length === 0) {
+      setFavoriteAuthors([]);
+      setIsLoadingAuthors(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadFavoriteAuthors() {
+      try {
+        setIsLoadingAuthors(true);
+
+        const authors = await Promise.all(
+          selectedAuthors.map((authorKey) => getAuthorDetails(authorKey)),
+        );
+
+        if (isMounted) {
+          setFavoriteAuthors(authors);
+        }
+      } catch (error) {
+        console.error("Loading favorite authors failed:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoadingAuthors(false);
+        }
+      }
+    }
+
+    loadFavoriteAuthors();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedAuthors, isLoadingPreferences]);
+
+  const handleBookPress = (item: OpenLibraryBook) => {
+    router.push({
+      pathname: "/book/[id]",
+      params: {
+        id: item.key.replace("/works/", ""),
+        coverId: item.cover_i?.toString() ?? "",
+      },
+    });
   };
-}, [selectedAuthors, isLoadingPreferences]);
-
-const handleBookPress = (item: OpenLibraryBook) => {
-  router.push({
-    pathname: "/book/[id]",
-    params: {
-      id: item.key.replace("/works/", ""),
-      coverId: item.cover_i?.toString() ?? "",
-    },
-  });
-};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -201,99 +254,130 @@ const handleBookPress = (item: OpenLibraryBook) => {
           )}
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Picked For You</Text>
 
-<View style={styles.section}>
-  <Text style={styles.sectionTitle}>
-    Picked For You
-  </Text>
-
-  {isLoadingBooks ? (
-    <ActivityIndicator size="large" color="#40C4AA" />
-  ) : booksError ? (
-    <Text style={styles.secondaryText}>
-      Unable to load recommendations. Please try again later.
-    </Text>
-  ) : recommendedBooks.length > 0 ? (
-
-<FlatList
-  key="picked-for-you-carousel"
-  data={recommendedBooks}
-  keyExtractor={(item) => item.key}
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  nestedScrollEnabled
-  contentContainerStyle={{
-    paddingRight: 10,
-  }}
-  renderItem={({ item }) => (
-    <View style={{ width: 175 }}>
-      <BookCard
-        title={item.title}
-        author={item.author_name?.join(", ") ?? "Unknown author"}
-        publishedYear={item.first_publish_year}
-        coverId={item.cover_i}
-        onPress={() => handleBookPress(item)}
-      />
-    </View>
-  )}
-/>
-
-  ) : (
-    <Text style={styles.secondaryText}>
-      No recommendations available yet.
-    </Text>
-  )}
-</View>
-
-
-<View style={styles.section}>
-  <Text style={styles.sectionTitle}>Favourite Authors</Text>
-
-  {isLoadingAuthors ? (
-    <ActivityIndicator size="large" color="#40C4AA" />
-  ) : favoriteAuthors.length > 0 ? (
-    <FlatList
-      data={favoriteAuthors}
-      key="favourite-authors-carousel"
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingRight: 10 }}
-      keyExtractor={(item) => item.key}
-      renderItem={({ item }) => {
-        const photoUrl = getAuthorPhotoUrl(item);
-
-        return (
-          <View style={styles.authorCard}>
-            {photoUrl ? (
-              <Image
-                source={{ uri: photoUrl }}
-                style={styles.authorImage}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <View style={styles.authorPlaceholder}>
-                <Text style={styles.authorInitial}>
-                  {item.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-
-            <Text style={styles.authorName} numberOfLines={2}>
-              {item.name}
+          {isLoadingBooks ? (
+            <ActivityIndicator size="large" color="#40C4AA" />
+          ) : booksError ? (
+            <Text style={styles.secondaryText}>
+              Unable to load recommendations. Please try again later.
             </Text>
-          </View>
-        );
-      }}
-    />
-  ) : (
-    <Text style={styles.secondaryText}>
-      Your favourite authors will appear here.
-    </Text>
-  )}
-</View>
+          ) : recommendedBooks.length > 0 ? (
+            <FlatList
+              key="picked-for-you-carousel"
+              data={recommendedBooks}
+              keyExtractor={(item) => item.key}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={styles.bookCarousel}
+              renderItem={({ item }) => (
+                <View style={styles.bookCardWrapper}>
+                  <BookCard
+                    title={item.title}
+                    author={item.author_name?.join(", ") ?? "Unknown author"}
+                    publishedYear={item.first_publish_year}
+                    coverId={item.cover_i}
+                    onPress={() => handleBookPress(item)}
+                  />
+                </View>
+              )}
+            />
+          ) : (
+            <Text style={styles.secondaryText}>
+              No recommendations available yet.
+            </Text>
+          )}
+        </View>
 
+        {/* More in Your Genres */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>More in Your Genres</Text>
 
+          {isLoadingMoreBooks ? (
+            <ActivityIndicator size="small" color="#40C4AA" />
+          ) : moreGenreBooks.length > 0 ? (
+            <FlatList
+              key="more-genre-books-carousel"
+              data={moreGenreBooks}
+              horizontal
+              keyExtractor={(item) => item.key}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bookCarousel}
+              renderItem={({ item }) => (
+                <View style = {styles.bookCardWrapper}>
+                <BookCard
+                  title={item.title}
+                  author={item.author_name?.[0] ?? "Unknown Author"}
+                  publishedYear={item.first_publish_year}
+                  coverId={item.cover_i}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/book/[id]",
+                      params: {
+                        id: item.key.replace("/works/", ""),
+                        coverId: item.cover_i?.toString() ?? "",
+                      },
+                    })
+                  }
+                />
+                </View>
+              )}
+            />
+          ) : (
+            <Text style={styles.secondaryText}>
+              No additional books found in your selected genres.
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Favourite Authors</Text>
+
+          {isLoadingAuthors ? (
+            <ActivityIndicator size="large" color="#40C4AA" />
+          ) : favoriteAuthors.length > 0 ? (
+            <FlatList
+              data={favoriteAuthors}
+              key="favourite-authors-carousel"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 10 }}
+              keyExtractor={(item) => item.key}
+              renderItem={({ item }) => {
+                const photoUrl = getAuthorPhotoUrl(item);
+
+                return (
+                  <View style={styles.authorCard}>
+                    {photoUrl ? (
+                      <Image
+                        source={{ uri: photoUrl }}
+                        style={styles.authorImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <View style={styles.authorPlaceholder}>
+                        <Text style={styles.authorInitial}>
+                          {item.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+
+                    <Text style={styles.authorName} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                  </View>
+                );
+              }}
+            />
+          ) : (
+            <Text style={styles.secondaryText}>
+              Your favourite authors will appear here.
+            </Text>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -362,43 +446,51 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-authorCard: {
-  width: 125,
-  marginRight: 14,
-  alignItems: "center",
-  backgroundColor: "#191919",
-  borderRadius: 14,
-  padding: 12,
-},
+    bookCarousel: {
+    paddingRight: 10,
+  },
 
-authorImage: {
-  width: 95,
-  height: 110,
-  borderRadius: 12,
-  backgroundColor: "#292929",
-},
+  bookCardWrapper: {
+    width: 175,
+    marginRight: 14,
+  },
 
-authorPlaceholder: {
-  width: 95,
-  height: 110,
-  borderRadius: 12,
-  backgroundColor: "#292929",
-  justifyContent: "center",
-  alignItems: "center",
-},
+  authorCard: {
+    width: 125,
+    marginRight: 14,
+    alignItems: "center",
+    backgroundColor: "#191919",
+    borderRadius: 14,
+    padding: 12,
+  },
 
-authorInitial: {
-  color: "#40C4AA",
-  fontSize: 36,
-  fontWeight: "bold",
-},
+  authorImage: {
+    width: 95,
+    height: 110,
+    borderRadius: 12,
+    backgroundColor: "#292929",
+  },
 
-authorName: {
-  color: "#FFFFFF",
-  fontSize: 13,
-  fontWeight: "600",
-  textAlign: "center",
-  marginTop: 10,
-},
+  authorPlaceholder: {
+    width: 95,
+    height: 110,
+    borderRadius: 12,
+    backgroundColor: "#292929",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
+  authorInitial: {
+    color: "#40C4AA",
+    fontSize: 36,
+    fontWeight: "bold",
+  },
+
+  authorName: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 10,
+  },
 });

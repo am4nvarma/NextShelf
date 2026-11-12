@@ -33,11 +33,12 @@ export async function searchBooks(
 export async function getBooksByGenre(
   genre: string,
   signal?: AbortSignal,
+  offset: number = 0,
 ): Promise<OpenLibraryBook[]> {
   const result = await searchBooks(
     `subject:"${genre}"`,
     signal,
-    0,
+    offset,
   );
 
   return result.docs;
@@ -93,6 +94,59 @@ export async function getPersonalizedBooksByGenres(
 
   return recommendations;
 }
+
+
+export async function getPopularBooksByGenres(
+  selectedGenres: string[],
+  excludedBookKeys: string[],
+  signal?: AbortSignal,
+): Promise<OpenLibraryBook[]> {
+  if (selectedGenres.length === 0) {
+    return [];
+  }
+
+  const genreResults = await Promise.all(
+    selectedGenres.map((genre) =>
+      getBooksByGenre(genre, signal, 20),
+    ),
+  );
+
+  const recommendations: OpenLibraryBook[] = [];
+  const seenBooks = new Set(excludedBookKeys);
+  const maxBooks = 12;
+
+  for (
+    let index = 0;
+    recommendations.length < maxBooks;
+    index++
+  ) {
+    let foundBooksInRound = false;
+
+    for (const books of genreResults) {
+      const book = books[index];
+
+      if (!book) continue;
+
+      foundBooksInRound = true;
+
+      if (!seenBooks.has(book.key)) {
+        seenBooks.add(book.key);
+        recommendations.push(book);
+      }
+
+      if (recommendations.length >= maxBooks) {
+        break;
+      }
+    }
+
+    if (!foundBooksInRound) {
+      break;
+    }
+  }
+
+  return recommendations;
+}
+
 
 
 export async function getBookDetails(bookKey: string) {
