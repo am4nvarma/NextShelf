@@ -21,16 +21,25 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState ("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
-    if (!email.trim() || !password || !confirmPassword) {
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
       Alert.alert("Missing Information", "Please fill in all fields.");
       return;
     }
+
+    if (username.trim().length < 3) {
+      Alert.alert(
+        "Invalid Username",
+        "Your Username must contain at least 3 characters."
+      );
+      return;
+    } 
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
@@ -53,7 +62,11 @@ export default function SignupScreen() {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
+      const { error } = await signUp(
+        email.trim(), 
+        password,
+        username.trim(),
+      );
 
       if (error) {
         Alert.alert("Signup Failed", error);
@@ -85,6 +98,20 @@ export default function SignupScreen() {
           <Text style={styles.subtitle}>Your next great read starts here.</Text>
 
           <View style={styles.form}>
+
+            <Text style= {styles.label}>Username</Text>
+            <TextInput 
+            style={styles.input}
+            placeholder="Please Create Your Username"
+            placeholderTextColor="#888888"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={20}
+            returnKeyType="next"
+            />
+
             <Text style={styles.label}>Email Address</Text>
 
             <TextInput
