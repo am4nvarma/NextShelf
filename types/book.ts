@@ -30,14 +30,16 @@ export type BookDetails = {
   }[];
 };
 
+
 export type BookAuthor = {
-    key: string;
-    name: string;
-    bio?: string | {
-        type: string;
-        value: string;
-    };
-};  
+  key: string;
+  name: string;
+  bio?: string | {
+    type: string;
+    value: string;
+  };
+  photos?: number[];
+};
 
 export type AuthorSearchDocument = {
   author_key?: string[];

@@ -3,6 +3,7 @@ import {
   OpenLibrarySearchResponse,
   AuthorSearchResponse,
   AuthorRecommendation,
+  OpenLibraryBook,
 } from "../types/book";
 
 
@@ -27,6 +28,72 @@ export async function searchBooks(
 
   return data;
 }
+
+
+export async function getBooksByGenre(
+  genre: string,
+  signal?: AbortSignal,
+): Promise<OpenLibraryBook[]> {
+  const result = await searchBooks(
+    `subject:"${genre}"`,
+    signal,
+    0,
+  );
+
+  return result.docs;
+}
+
+
+
+export async function getPersonalizedBooksByGenres(
+  selectedGenres: string[],
+  signal?: AbortSignal,
+): Promise<OpenLibraryBook[]> {
+  if (selectedGenres.length === 0) {
+    return [];
+  }
+
+  const genreResults = await Promise.all(
+    selectedGenres.map((genre) => getBooksByGenre(genre, signal)),
+  );
+
+  const recommendations: OpenLibraryBook[] = [];
+  const seenBooks = new Set<string>();
+  const maxBooks = 12;
+
+  // Take one book from each genre in rotation.
+  for (
+    let index = 0;
+    recommendations.length < maxBooks;
+    index++
+  ) {
+    let foundBooksInRound = false;
+
+    for (const books of genreResults) {
+      const book = books[index];
+
+      if (!book) continue;
+
+      foundBooksInRound = true;
+
+      if (!seenBooks.has(book.key)) {
+        seenBooks.add(book.key);
+        recommendations.push(book);
+      }
+
+      if (recommendations.length >= maxBooks) {
+        break;
+      }
+    }
+
+    if (!foundBooksInRound) {
+      break;
+    }
+  }
+
+  return recommendations;
+}
+
 
 export async function getBookDetails(bookKey: string) {
   const url = `https://openlibrary.org/works/${bookKey}.json`;
