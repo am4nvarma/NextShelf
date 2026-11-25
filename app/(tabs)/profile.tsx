@@ -20,7 +20,7 @@ export default function ProfileScreen() {
     user?.user_metadata?.name ||
     "NextShelf Reader";
 
-  const username = user?.email ? `@${user.email.split("@")[0]}` : "@reader";
+  const username = user?.user_metadata?.username?.trim() || "Reader";
 
   const showComingSoon = (feature: string) => {
     Alert.alert(feature, "This feature will be available soon!");
