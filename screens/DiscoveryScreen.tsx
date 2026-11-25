@@ -28,6 +28,8 @@ export default function DiscoveryScreen() {
 
   const router = useRouter();
 
+
+
   // Prevent multiple pagination requests at the same time.
   const isLoadingMoreRef = useRef(false);
 
@@ -37,89 +39,92 @@ export default function DiscoveryScreen() {
   // Keep a reference to the current pagination request.
   const paginationControllerRef = useRef<AbortController | null>(null);
 
-  const loadBooks = useCallback(async (
-    query: string,
-    signal?: AbortSignal,
-    nextOffset: number = 0,
-    requestVersion: number = searchVersionRef.current,
-  ) => {
-    try {
-      if (nextOffset === 0) {
-        setIsLoading(true);
-        setError(false);
-      }
-
-      console.log("--------------------------------");
-      console.log("📚 NEXTSHELF API REQUEST");
-      console.log("Search query:", query);
-      console.log("Requested offset:", nextOffset);
-      console.log("Requested limit:", 20);
-      console.log("Expected books:", 20);
-
-      console.log("⏳ FETCH STARTED:", {
-        query,
-        offset: nextOffset,
-        version: requestVersion,
-      });
-      const result = await searchBooks(query, signal, nextOffset);
-
-      console.log("📥 API RESPONSE");
-      console.log("Books actually returned:", result.docs.length);
-      console.log("Total books reported by API:", result.numFound);
-      console.log("Next offset will be:", nextOffset + result.docs.length);
-      console.log("--------------------------------");
-
-      // Ignore outdated or cancelled requests.
-      if (signal?.aborted || requestVersion !== searchVersionRef.current) {
-        return;
-      }
-
-      if (nextOffset === 0) {
-        setBooks(result.docs);
-      } else {
-        setBooks((previousBooks) => {
-          const existingKeys = new Set(previousBooks.map((book) => book.key));
-
-          const newBooks = result.docs.filter(
-            (book) => !existingKeys.has(book.key),
-          );
-
-          return [...previousBooks, ...newBooks];
-        });
-      }
-
-      setTotalBooks(result.numFound);
-
-      // Advance by the number of raw results returned by the API.
-      // If the API returns no results, stop further pagination.
-      setOffset(
-        result.docs.length === 0
-          ? result.numFound
-          : nextOffset + result.docs.length,
-      );
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        return;
-      }
-
-      if (requestVersion !== searchVersionRef.current) {
-        return;
-      }
-
-      console.log("Failed to load books:", err);
-      setError(true);
-    } finally {
-      if (requestVersion === searchVersionRef.current) {
+  const loadBooks = useCallback(
+    async (
+      query: string,
+      signal?: AbortSignal,
+      nextOffset: number = 0,
+      requestVersion: number = searchVersionRef.current,
+    ) => {
+      try {
         if (nextOffset === 0) {
-          setIsLoading(false);
+          setIsLoading(true);
+          setError(false);
+        }
+
+        console.log("--------------------------------");
+        console.log("📚 NEXTSHELF API REQUEST");
+        console.log("Search query:", query);
+        console.log("Requested offset:", nextOffset);
+        console.log("Requested limit:", 20);
+        console.log("Expected books:", 20);
+
+        console.log("⏳ FETCH STARTED:", {
+          query,
+          offset: nextOffset,
+          version: requestVersion,
+        });
+        const result = await searchBooks(query, signal, nextOffset);
+
+        console.log("📥 API RESPONSE");
+        console.log("Books actually returned:", result.docs.length);
+        console.log("Total books reported by API:", result.numFound);
+        console.log("Next offset will be:", nextOffset + result.docs.length);
+        console.log("--------------------------------");
+
+        // Ignore outdated or cancelled requests.
+        if (signal?.aborted || requestVersion !== searchVersionRef.current) {
+          return;
+        }
+
+        if (nextOffset === 0) {
+          setBooks(result.docs);
         } else {
-          setIsLoadingMore(false);
-          isLoadingMoreRef.current = false;
-          paginationControllerRef.current = null;
+          setBooks((previousBooks) => {
+            const existingKeys = new Set(previousBooks.map((book) => book.key));
+
+            const newBooks = result.docs.filter(
+              (book) => !existingKeys.has(book.key),
+            );
+
+            return [...previousBooks, ...newBooks];
+          });
+        }
+
+        setTotalBooks(result.numFound);
+
+        // Advance by the number of raw results returned by the API.
+        // If the API returns no results, stop further pagination.
+        setOffset(
+          result.docs.length === 0
+            ? result.numFound
+            : nextOffset + result.docs.length,
+        );
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+
+        if (requestVersion !== searchVersionRef.current) {
+          return;
+        }
+
+        console.log("Failed to load books:", err);
+        setError(true);
+      } finally {
+        if (requestVersion === searchVersionRef.current) {
+          if (nextOffset === 0) {
+            setIsLoading(false);
+          } else {
+            setIsLoadingMore(false);
+            isLoadingMoreRef.current = false;
+            paginationControllerRef.current = null;
+          }
         }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Load the next page when the user scrolls.
   const loadMoreBooks = useCallback(() => {
@@ -213,30 +218,30 @@ export default function DiscoveryScreen() {
   };
 
   const handleBookPress = useCallback(
-  (item: OpenLibraryBook) => {
-    router.push({
-      pathname: "/book/[id]",
-      params: {
-        id: item.key.replace("/works/", ""),
-        coverId: item.cover_i?.toString() ?? "",
-      },
-    });
-  },
-  [router]
-);
+    (item: OpenLibraryBook) => {
+      router.push({
+        pathname: "/book/[id]",
+        params: {
+          id: item.key.replace("/works/", ""),
+          coverId: item.cover_i?.toString() ?? "",
+        },
+      });
+    },
+    [router],
+  );
 
-const renderBookItem = useCallback(
-  ({ item }: { item: OpenLibraryBook }) => (
-    <BookCard
-      title={item.title}
-      author={item.author_name?.join(", ") ?? "Unknown author"}
-      publishedYear={item.first_publish_year}
-      coverId={item.cover_i}
-      onPress={() => handleBookPress(item)}
-    />
-  ),
-  [handleBookPress]
-);
+  const renderBookItem = useCallback(
+    ({ item }: { item: OpenLibraryBook }) => (
+      <BookCard
+        title={item.title}
+        author={item.author_name?.join(", ") ?? "Unknown author"}
+        publishedYear={item.first_publish_year}
+        coverId={item.cover_i}
+        onPress={() => handleBookPress(item)}
+      />
+    ),
+    [handleBookPress],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -327,7 +332,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#40C4AA",
     marginLeft: 5,
-    marginTop : -25
+    marginTop: -25,
   },
   searchContainer: {
     flexDirection: "row",

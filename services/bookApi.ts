@@ -49,13 +49,15 @@ export async function getBooksByGenre(
 export async function getPersonalizedBooksByGenres(
   selectedGenres: string[],
   signal?: AbortSignal,
+  offset: number = 0,
 ): Promise<OpenLibraryBook[]> {
   if (selectedGenres.length === 0) {
     return [];
   }
 
   const genreResults = await Promise.all(
-    selectedGenres.map((genre) => getBooksByGenre(genre, signal)),
+    selectedGenres.map((genre) => 
+      getBooksByGenre(genre, signal, offset)),
   );
 
   const recommendations: OpenLibraryBook[] = [];
@@ -100,6 +102,7 @@ export async function getPopularBooksByGenres(
   selectedGenres: string[],
   excludedBookKeys: string[],
   signal?: AbortSignal,
+  offset: number = 20,
 ): Promise<OpenLibraryBook[]> {
   if (selectedGenres.length === 0) {
     return [];
@@ -107,7 +110,7 @@ export async function getPopularBooksByGenres(
 
   const genreResults = await Promise.all(
     selectedGenres.map((genre) =>
-      getBooksByGenre(genre, signal, 20),
+      getBooksByGenre(genre, signal, offset),
     ),
   );
 

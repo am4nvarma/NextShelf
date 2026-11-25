@@ -48,6 +48,18 @@ export default function HomeScreen() {
   const [moreGenreBooks, setMoreGenreBooks] = useState<OpenLibraryBook[]>([]);
   const [isLoadingMoreBooks, setIsLoadingMoreBooks] = useState(true);
 
+    // Picked for you pagination
+    const [nextRecommendedOffset, setNextRecommendedOffset] = useState(20);
+    const [isFetchingMoreRecommended, setIsFetchingMoreRecommended] =
+      useState(false);
+    const [hasMoreRecommended, setHasMoreRecommended] = useState(true);
+  
+    // More in your genres pagination
+    const [nextMoreGenreOffset, setNextMoreGenreOffset] = useState(40);
+    const [isFetchingMoreGenreBooks, setIsFetchingMoreGenreBooks] =
+      useState(false);
+    const [hasMoreGenreBooks, setHasMoreGenreBooks] = useState(true);
+
   const router = useRouter();
 
   const username = user?.user_metadata?.username?.trim() || "Reader";
@@ -217,6 +229,100 @@ export default function HomeScreen() {
     });
   };
 
+
+const loadMoreRecommendedBooks = async () => {
+  if (
+    isFetchingMoreRecommended ||
+    !hasMoreRecommended ||
+    isLoadingBooks ||
+    selectedGenres.length === 0
+  ) {
+    return;
+  }
+
+  try {
+    setIsFetchingMoreRecommended(true);
+
+    const books = await getPersonalizedBooksByGenres(
+      selectedGenres,
+      undefined,
+      nextRecommendedOffset,
+    );
+
+    setRecommendedBooks((previousBooks) => {
+      const existingKeys = new Set(previousBooks.map((book) => book.key));
+
+      const uniqueBooks = books.filter(
+        (book) => !existingKeys.has(book.key),
+      );
+
+      return [...previousBooks, ...uniqueBooks];
+    });
+
+    setNextRecommendedOffset((previousOffset) => previousOffset + 20);
+
+    if (books.length < 12) {
+      setHasMoreRecommended(false);
+    }
+  } catch (error) {
+    console.error("Loading more recommendations failed:", error);
+  } finally {
+    setIsFetchingMoreRecommended(false);
+  }
+};
+
+const loadMoreGenreBooks = async () => {
+  if (
+    isFetchingMoreGenreBooks ||
+    !hasMoreGenreBooks ||
+    isLoadingMoreBooks ||
+    selectedGenres.length === 0
+  ) {
+    return;
+  }
+
+  try {
+    setIsFetchingMoreGenreBooks(true);
+
+    // Exclude books already displayed in either carousel.
+    const excludedBookKeys = [
+      ...recommendedBooks.map((book) => book.key),
+      ...moreGenreBooks.map((book) => book.key),
+    ];
+
+    const books = await getPopularBooksByGenres(
+      selectedGenres,
+      excludedBookKeys,
+      undefined,
+      nextMoreGenreOffset,
+    );
+
+    setMoreGenreBooks((previousBooks) => {
+      const existingKeys = new Set([
+        ...recommendedBooks.map((book) => book.key),
+        ...previousBooks.map((book) => book.key),
+      ]);
+
+      const uniqueBooks = books.filter(
+        (book) => !existingKeys.has(book.key),
+      );
+
+      return [...previousBooks, ...uniqueBooks];
+    });
+
+    setNextMoreGenreOffset((previousOffset) => previousOffset + 20);
+
+    // Continue if this batch returned books, even if fewer than 12.
+    if (books.length === 0) {
+      setHasMoreGenreBooks(false);
+    }
+  } catch (error) {
+    console.error("Loading more genre books failed:", error);
+  } finally {
+    setIsFetchingMoreGenreBooks(false);
+  }
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -271,6 +377,8 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               nestedScrollEnabled
+              onEndReached={loadMoreRecommendedBooks}
+              onEndReachedThreshold={0.5}
               contentContainerStyle={styles.bookCarousel}
               renderItem={({ item }) => (
                 <View style={styles.bookCardWrapper}>
@@ -304,6 +412,8 @@ export default function HomeScreen() {
               horizontal
               keyExtractor={(item) => item.key}
               showsHorizontalScrollIndicator={false}
+              onEndReached={loadMoreGenreBooks}
+              onEndReachedThreshold={0.5}
               contentContainerStyle={styles.bookCarousel}
               renderItem={({ item }) => (
                 <View style = {styles.bookCardWrapper}>
