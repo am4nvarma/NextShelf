@@ -23,6 +23,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import homeHero from "../assets/images/home-hero.png";
 import BookCardSkeleton from "../components/BookCardSkeleton";
+import AuthorCardSkeleton from "../components/AuthorCardSkeleton";
 
 function getAuthorPhotoUrl(author: BookAuthor): string | null {
   const photoId = author.photos?.[0];
@@ -329,7 +330,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.welcomeSection}>
-          <Text style={styles.greeting}>Hello, {username}! 👋</Text>
+          <Text style={styles.greeting}>Hello, {username}</Text>
 
           <Text style={styles.subtitle}>
             Ready to discover your next favourite book?
@@ -423,7 +424,15 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>More in Your Genres</Text>
 
           {isLoadingMoreBooks ? (
-            <ActivityIndicator size="small" color="#40C4AA" />
+            <FlatList
+              data={[1, 2, 3]}
+              keyExtractor={(item) => item.toString()}
+              horizontal
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bookCarousel}
+              renderItem={() => <BookCardSkeleton />}
+            />
           ) : moreGenreBooks.length > 0 ? (
             <FlatList
               key="more-genre-books-carousel"
@@ -465,7 +474,15 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Favourite Authors</Text>
 
           {isLoadingAuthors ? (
-            <ActivityIndicator size="large" color="#40C4AA" />
+                        <FlatList
+              data={[1, 2, 3]}
+              keyExtractor={(item) => item.toString()}
+              horizontal
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bookCarousel}
+              renderItem={() => <AuthorCardSkeleton />}
+            />
           ) : favoriteAuthors.length > 0 ? (
             <FlatList
               data={favoriteAuthors}
@@ -517,37 +534,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#080000",
   },
-header: {
-  paddingHorizontal: 20,
-  paddingTop: 12,
-},
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 1,
+  },
 
-brand: {
-  fontSize: 29,
-  fontWeight: "700",
-  color: "#40C4AA",
-  letterSpacing: 0.4,
-},
+  brand: {
+    fontSize: 29,
+    fontWeight: "700",
+    color: "#40C4AA",
+    letterSpacing: 0.4,
+  },
 
-welcomeSection: {
-  paddingHorizontal: 20,
-  marginTop: 26,
-  marginBottom: 30,
-},
+  welcomeSection: {
+    paddingHorizontal: 20,
+    marginTop: 5,
+    marginBottom: 30,
+  },
 
-greeting: {
-  fontSize: 26,
-  fontWeight: "700",
-  color: "#FFFFFF",
-  letterSpacing: 0.2,
-},
+  greeting: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
 
-subtitle: {
-  color: "#AAAAAA",
-  fontSize: 14,
-  lineHeight: 21,
-  marginTop: 8,
-},
+  subtitle: {
+    color: "#AAAAAA",
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 1,
+  },
 
   section: {
     paddingHorizontal: 20,
@@ -558,7 +575,7 @@ subtitle: {
     fontSize: 21,
     fontWeight: "700",
     marginBottom: 18,
-    letterSpacing: 0.3
+    letterSpacing: 0.3,
   },
   secondaryText: {
     color: "#999999",
@@ -570,20 +587,20 @@ subtitle: {
     flexWrap: "wrap",
     gap: 10,
   },
-genreChip: {
-  backgroundColor: "#191919",
-  borderWidth: 1,
-  borderColor: "#285F55",
-  paddingHorizontal: 15,
-  paddingVertical: 9,
-  borderRadius: 20,
-},
+  genreChip: {
+    backgroundColor: "#191919",
+    borderWidth: 1,
+    borderColor: "#285F55",
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
 
-genreText: {
-  color: "#40C4AA",
-  fontSize: 13,
-  fontWeight: "600",
-},
+  genreText: {
+    color: "#40C4AA",
+    fontSize: 13,
+    fontWeight: "600",
+  },
 
   bookCarousel: {
     paddingRight: 10,
@@ -635,12 +652,13 @@ genreText: {
 
   heroBanner: {
     height: 230,
-    marginHorizontal: 20,
-    marginBottom: 32,
+    marginHorizontal: 10,
+    marginBottom: 10,
     borderRadius: 18,
     overflow: "hidden",
     position: "relative",
     backgroundColor: "#191919",
+    marginTop: -25
   },
 
   heroImage: {
@@ -652,21 +670,21 @@ genreText: {
   heroOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    padding: 20,
+    padding: 24,
   },
 
-heroButton: {
-  backgroundColor: "#40C4AA",
-  paddingHorizontal: 18,
-  paddingVertical: 11,
-  borderRadius: 10,
-  alignSelf: "flex-start",
-  marginBottom: 9,
-},
+  heroButton: {
+    backgroundColor: "#40C4AA",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    alignSelf: "flex-start",
+    marginBottom: 9,
+  },
 
   heroButtonText: {
     color: "#080000",
     fontSize: 15,
-    fontWeight: "bold",
+    fontWeight: "800",
   },
 });
