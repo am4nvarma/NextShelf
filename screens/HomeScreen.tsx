@@ -5,6 +5,7 @@ import {
   ScrollView,
   ActivityIndicator,
   FlatList,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
@@ -20,6 +21,8 @@ import type { OpenLibraryBook, BookAuthor } from "../types/book";
 import BookCard from "../components/BookCard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import homeHero from "../assets/images/home-hero.png";
+import BookCardSkeleton from "../components/BookCardSkeleton";
 
 function getAuthorPhotoUrl(author: BookAuthor): string | null {
   const photoId = author.photos?.[0];
@@ -48,17 +51,17 @@ export default function HomeScreen() {
   const [moreGenreBooks, setMoreGenreBooks] = useState<OpenLibraryBook[]>([]);
   const [isLoadingMoreBooks, setIsLoadingMoreBooks] = useState(true);
 
-    // Picked for you pagination
-    const [nextRecommendedOffset, setNextRecommendedOffset] = useState(20);
-    const [isFetchingMoreRecommended, setIsFetchingMoreRecommended] =
-      useState(false);
-    const [hasMoreRecommended, setHasMoreRecommended] = useState(true);
-  
-    // More in your genres pagination
-    const [nextMoreGenreOffset, setNextMoreGenreOffset] = useState(40);
-    const [isFetchingMoreGenreBooks, setIsFetchingMoreGenreBooks] =
-      useState(false);
-    const [hasMoreGenreBooks, setHasMoreGenreBooks] = useState(true);
+  // Picked for you pagination
+  const [nextRecommendedOffset, setNextRecommendedOffset] = useState(20);
+  const [isFetchingMoreRecommended, setIsFetchingMoreRecommended] =
+    useState(false);
+  const [hasMoreRecommended, setHasMoreRecommended] = useState(true);
+
+  // More in your genres pagination
+  const [nextMoreGenreOffset, setNextMoreGenreOffset] = useState(40);
+  const [isFetchingMoreGenreBooks, setIsFetchingMoreGenreBooks] =
+    useState(false);
+  const [hasMoreGenreBooks, setHasMoreGenreBooks] = useState(true);
 
   const router = useRouter();
 
@@ -229,99 +232,94 @@ export default function HomeScreen() {
     });
   };
 
+  const loadMoreRecommendedBooks = async () => {
+    if (
+      isFetchingMoreRecommended ||
+      !hasMoreRecommended ||
+      isLoadingBooks ||
+      selectedGenres.length === 0
+    ) {
+      return;
+    }
 
-const loadMoreRecommendedBooks = async () => {
-  if (
-    isFetchingMoreRecommended ||
-    !hasMoreRecommended ||
-    isLoadingBooks ||
-    selectedGenres.length === 0
-  ) {
-    return;
-  }
+    try {
+      setIsFetchingMoreRecommended(true);
 
-  try {
-    setIsFetchingMoreRecommended(true);
-
-    const books = await getPersonalizedBooksByGenres(
-      selectedGenres,
-      undefined,
-      nextRecommendedOffset,
-    );
-
-    setRecommendedBooks((previousBooks) => {
-      const existingKeys = new Set(previousBooks.map((book) => book.key));
-
-      const uniqueBooks = books.filter(
-        (book) => !existingKeys.has(book.key),
+      const books = await getPersonalizedBooksByGenres(
+        selectedGenres,
+        undefined,
+        nextRecommendedOffset,
       );
 
-      return [...previousBooks, ...uniqueBooks];
-    });
+      setRecommendedBooks((previousBooks) => {
+        const existingKeys = new Set(previousBooks.map((book) => book.key));
 
-    setNextRecommendedOffset((previousOffset) => previousOffset + 20);
+        const uniqueBooks = books.filter((book) => !existingKeys.has(book.key));
 
-    if (books.length < 12) {
-      setHasMoreRecommended(false);
+        return [...previousBooks, ...uniqueBooks];
+      });
+
+      setNextRecommendedOffset((previousOffset) => previousOffset + 20);
+
+      if (books.length < 12) {
+        setHasMoreRecommended(false);
+      }
+    } catch (error) {
+      console.error("Loading more recommendations failed:", error);
+    } finally {
+      setIsFetchingMoreRecommended(false);
     }
-  } catch (error) {
-    console.error("Loading more recommendations failed:", error);
-  } finally {
-    setIsFetchingMoreRecommended(false);
-  }
-};
+  };
 
-const loadMoreGenreBooks = async () => {
-  if (
-    isFetchingMoreGenreBooks ||
-    !hasMoreGenreBooks ||
-    isLoadingMoreBooks ||
-    selectedGenres.length === 0
-  ) {
-    return;
-  }
+  const loadMoreGenreBooks = async () => {
+    if (
+      isFetchingMoreGenreBooks ||
+      !hasMoreGenreBooks ||
+      isLoadingMoreBooks ||
+      selectedGenres.length === 0
+    ) {
+      return;
+    }
 
-  try {
-    setIsFetchingMoreGenreBooks(true);
+    try {
+      setIsFetchingMoreGenreBooks(true);
 
-    // Exclude books already displayed in either carousel.
-    const excludedBookKeys = [
-      ...recommendedBooks.map((book) => book.key),
-      ...moreGenreBooks.map((book) => book.key),
-    ];
-
-    const books = await getPopularBooksByGenres(
-      selectedGenres,
-      excludedBookKeys,
-      undefined,
-      nextMoreGenreOffset,
-    );
-
-    setMoreGenreBooks((previousBooks) => {
-      const existingKeys = new Set([
+      // Exclude books already displayed in either carousel.
+      const excludedBookKeys = [
         ...recommendedBooks.map((book) => book.key),
-        ...previousBooks.map((book) => book.key),
-      ]);
+        ...moreGenreBooks.map((book) => book.key),
+      ];
 
-      const uniqueBooks = books.filter(
-        (book) => !existingKeys.has(book.key),
+      const books = await getPopularBooksByGenres(
+        selectedGenres,
+        excludedBookKeys,
+        undefined,
+        nextMoreGenreOffset,
       );
 
-      return [...previousBooks, ...uniqueBooks];
-    });
+      setMoreGenreBooks((previousBooks) => {
+        const existingKeys = new Set([
+          ...recommendedBooks.map((book) => book.key),
+          ...previousBooks.map((book) => book.key),
+        ]);
 
-    setNextMoreGenreOffset((previousOffset) => previousOffset + 20);
+        const uniqueBooks = books.filter((book) => !existingKeys.has(book.key));
 
-    // Continue if this batch returned books, even if fewer than 12.
-    if (books.length === 0) {
-      setHasMoreGenreBooks(false);
+        return [...previousBooks, ...uniqueBooks];
+      });
+
+      setNextMoreGenreOffset((previousOffset) => previousOffset + 20);
+
+      // Continue if this batch returned books, even if fewer than 12.
+      if (books.length === 0) {
+        setHasMoreGenreBooks(false);
+      }
+    } catch (error) {
+      console.error("Loading more genre books failed:", error);
+    } finally {
+      setIsFetchingMoreGenreBooks(false);
     }
-  } catch (error) {
-    console.error("Loading more genre books failed:", error);
-  } finally {
-    setIsFetchingMoreGenreBooks(false);
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -336,6 +334,19 @@ const loadMoreGenreBooks = async () => {
           <Text style={styles.subtitle}>
             Ready to discover your next favourite book?
           </Text>
+        </View>
+
+        <View style={styles.heroBanner}>
+          <Image source={homeHero} style={styles.heroImage} contentFit="fill" />
+
+          <View style={styles.heroOverlay}>
+            <Pressable
+              style={styles.heroButton}
+              onPress={() => router.push("/(tabs)/explore")}
+            >
+              <Text style={styles.heroButtonText}>Explore Books</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -364,7 +375,15 @@ const loadMoreGenreBooks = async () => {
           <Text style={styles.sectionTitle}>Picked For You</Text>
 
           {isLoadingBooks ? (
-            <ActivityIndicator size="large" color="#40C4AA" />
+            <FlatList
+              data={[1, 2, 3]}
+              keyExtractor={(item) => item.toString()}
+              horizontal
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bookCarousel}
+              renderItem={() => <BookCardSkeleton />}
+            />
           ) : booksError ? (
             <Text style={styles.secondaryText}>
               Unable to load recommendations. Please try again later.
@@ -416,22 +435,22 @@ const loadMoreGenreBooks = async () => {
               onEndReachedThreshold={0.5}
               contentContainerStyle={styles.bookCarousel}
               renderItem={({ item }) => (
-                <View style = {styles.bookCardWrapper}>
-                <BookCard
-                  title={item.title}
-                  author={item.author_name?.[0] ?? "Unknown Author"}
-                  publishedYear={item.first_publish_year}
-                  coverId={item.cover_i}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/book/[id]",
-                      params: {
-                        id: item.key.replace("/works/", ""),
-                        coverId: item.cover_i?.toString() ?? "",
-                      },
-                    })
-                  }
-                />
+                <View style={styles.bookCardWrapper}>
+                  <BookCard
+                    title={item.title}
+                    author={item.author_name?.[0] ?? "Unknown Author"}
+                    publishedYear={item.first_publish_year}
+                    coverId={item.cover_i}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/book/[id]",
+                        params: {
+                          id: item.key.replace("/works/", ""),
+                          coverId: item.cover_i?.toString() ?? "",
+                        },
+                      })
+                    }
+                  />
                 </View>
               )}
             />
@@ -498,39 +517,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#080000",
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  brand: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#40C4AA",
-  },
-  welcomeSection: {
-    paddingHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 32,
-  },
-  greeting: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  subtitle: {
-    color: "#AAAAAA",
-    fontSize: 14,
-    marginTop: 8,
-  },
+header: {
+  paddingHorizontal: 20,
+  paddingTop: 12,
+},
+
+brand: {
+  fontSize: 29,
+  fontWeight: "700",
+  color: "#40C4AA",
+  letterSpacing: 0.4,
+},
+
+welcomeSection: {
+  paddingHorizontal: 20,
+  marginTop: 26,
+  marginBottom: 30,
+},
+
+greeting: {
+  fontSize: 26,
+  fontWeight: "700",
+  color: "#FFFFFF",
+  letterSpacing: 0.2,
+},
+
+subtitle: {
+  color: "#AAAAAA",
+  fontSize: 14,
+  lineHeight: 21,
+  marginTop: 8,
+},
+
   section: {
     paddingHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 36,
   },
   sectionTitle: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontSize: 21,
+    fontWeight: "700",
+    marginBottom: 18,
+    letterSpacing: 0.3
   },
   secondaryText: {
     color: "#999999",
@@ -542,21 +570,22 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
   },
-  genreChip: {
-    backgroundColor: "#191919",
-    borderWidth: 1,
-    borderColor: "#40C4AA",
-    paddingHorizontal: 15,
-    paddingVertical: 9,
-    borderRadius: 20,
-  },
-  genreText: {
-    color: "#40C4AA",
-    fontSize: 13,
-    fontWeight: "600",
-  },
+genreChip: {
+  backgroundColor: "#191919",
+  borderWidth: 1,
+  borderColor: "#285F55",
+  paddingHorizontal: 15,
+  paddingVertical: 9,
+  borderRadius: 20,
+},
 
-    bookCarousel: {
+genreText: {
+  color: "#40C4AA",
+  fontSize: 13,
+  fontWeight: "600",
+},
+
+  bookCarousel: {
     paddingRight: 10,
   },
 
@@ -602,5 +631,42 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginTop: 10,
+  },
+
+  heroBanner: {
+    height: 230,
+    marginHorizontal: 20,
+    marginBottom: 32,
+    borderRadius: 18,
+    overflow: "hidden",
+    position: "relative",
+    backgroundColor: "#191919",
+  },
+
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+  },
+
+  heroOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 20,
+  },
+
+heroButton: {
+  backgroundColor: "#40C4AA",
+  paddingHorizontal: 18,
+  paddingVertical: 11,
+  borderRadius: 10,
+  alignSelf: "flex-start",
+  marginBottom: 9,
+},
+
+  heroButtonText: {
+    color: "#080000",
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });
