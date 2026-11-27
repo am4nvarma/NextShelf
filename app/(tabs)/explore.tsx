@@ -1,11 +1,5 @@
-import { View, Text } from 'react-native'
+import DiscoveryScreen from "../../screens/DiscoveryScreen";
 
-const explore = () => {
-  return (
-    <View style = {{flex:1, justifyContent:"center", alignItems:"center"}}>
-      <Text>This is explore Tab</Text>
-    </View>
-  )
+export default function ExploreTab () {
+  return <DiscoveryScreen />
 }
-
-export default explore

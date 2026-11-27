@@ -2,8 +2,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  ActivityIndicator,
+  ScrollView, 
   FlatList,
   Pressable,
 } from "react-native";
@@ -325,12 +324,9 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>NextShelf</Text>
-        </View>
 
         <View style={styles.welcomeSection}>
-          <Text style={styles.greeting}>Hello, {username}</Text>
+          <Text style={styles.greeting}>@{username}🥸</Text>
 
           <Text style={styles.subtitle}>
             Ready to discover your next favourite book?
@@ -534,17 +530,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#080000",
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 1,
-  },
-
-  brand: {
-    fontSize: 29,
-    fontWeight: "700",
-    color: "#40C4AA",
-    letterSpacing: 0.4,
-  },
 
   welcomeSection: {
     paddingHorizontal: 20,
@@ -555,7 +540,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#9fca76",
     letterSpacing: 0.2,
   },
 

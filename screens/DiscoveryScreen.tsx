@@ -245,7 +245,7 @@ export default function DiscoveryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.brand}>NextShelf</Text>
+      
 
       <Text style={styles.heading}>Book Recommendations</Text>
 
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#ffffffb6",
+    color: "rgb(249, 249, 249)",
     marginBottom: 20,
     marginLeft: 5,
   },
